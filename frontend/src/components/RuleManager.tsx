@@ -1,7 +1,7 @@
-import { useMemo, useState, type ReactElement } from 'react';
+import { useMemo, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
 import { CategoryRuleSchema, RuleColumnSchema } from '../types';
 import type { CategoryRule } from '../types';
-import { ruleKey } from '../data/rules';
+import { parseImportedRules, ruleKey, serializeRules } from '../data/rules';
 
 export type ManagedRuleSource = 'user' | 'community' | 'global';
 
@@ -25,14 +25,19 @@ const sourceLabels: Record<ManagedRuleSource, string> = {
 export function RuleManager({
   rules,
   categories,
+  rulesToExport,
+  onImport,
   onUpdate,
   onDelete,
 }: {
   rules: ManagedRule[];
   categories: RuleCategoryOption[];
+  rulesToExport: CategoryRule[];
+  onImport: (rules: CategoryRule[]) => void;
   onUpdate: (previous: CategoryRule, next: CategoryRule) => void;
   onDelete: (rule: CategoryRule) => void;
 }): ReactElement {
+  const fileInput = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState('');
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<CategoryRule | null>(null);
@@ -90,6 +95,30 @@ export function RuleManager({
     if (editingKey === ruleKey(rule)) cancelEditing();
   }
 
+  function exportRules(): void {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(
+      new Blob([serializeRules(rulesToExport)], { type: 'application/json' }),
+    );
+    link.download = 'finance-dashboard-rules.json';
+    link.click();
+    URL.revokeObjectURL(link.href);
+    setMessage('Rules exported.');
+  }
+
+  async function importRules(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = '';
+    if (!file) return;
+    const imported = parseImportedRules(await file.text());
+    if (!imported) {
+      setMessage('The rules file is invalid.');
+      return;
+    }
+    onImport(imported);
+    setMessage('Rules imported.');
+  }
+
   return (
     <article className="panel rule-manager-panel">
       <div className="panel-heading">
@@ -104,6 +133,24 @@ export function RuleManager({
           Showing {visibleRules.length} of {rules.length}
         </span>
       </div>
+      <div className="category-actions">
+        <button className="button secondary" type="button" onClick={exportRules}>
+          Export rules
+        </button>
+        <label className="button secondary">
+          Import rules
+          <input
+            ref={fileInput}
+            className="file-picker-input"
+            type="file"
+            accept="application/json,.json"
+            onChange={(event) => void importRules(event)}
+          />
+        </label>
+      </div>
+      <p className="muted small">
+        Importing replaces your editable rules. Read-only shared rules stay unchanged.
+      </p>
       <label className="rule-filter">
         Filter rules
         <input

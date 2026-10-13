@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { TRANSACTIONS_SESSION_KEY } from './data/session';
 
 const csv = [
   'Buchungstag;Wertstellung;Buchungstext;Kontonummer;Empfänger;Zweck;Art;Saldo;Umsatz;A;B;C',
@@ -16,6 +17,7 @@ const csvWithNextUnknown = [
 describe('dashboard UI', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     vi.restoreAllMocks();
     vi.stubGlobal(
       'fetch',
@@ -38,6 +40,29 @@ describe('dashboard UI', () => {
     });
     expect(await screen.findByText('1 transactions loaded')).toBeInTheDocument();
     expect(screen.getByText('UNKNOWN SHOP')).toBeInTheDocument();
+  });
+
+  it('restores imported transactions after a page reload', async () => {
+    sessionStorage.setItem(
+      TRANSACTIONS_SESSION_KEY,
+      JSON.stringify([
+        {
+          id: '2026-01-02-1',
+          date: '2026-01-02',
+          period: '2026-01',
+          recipient: 'RESTORED SHOP',
+          purpose: 'Sonstiges',
+          type: 'Ausgang',
+          amount: -8,
+          category: 'unknown',
+        },
+      ]),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByText('1 transactions loaded')).toBeInTheDocument();
+    expect(screen.getByText('RESTORED SHOP')).toBeInTheDocument();
   });
 
   it('does not call the API for a local rule', async () => {

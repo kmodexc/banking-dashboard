@@ -38,6 +38,7 @@ export function useRuleSync(
   deleteUserRule: (rule: CategoryRule) => void;
   removeCommunityRules: () => Promise<void>;
   removePrivateServerRules: () => Promise<void>;
+  replaceLocalRules: (rules: CategoryRule[]) => void;
   replaceRules: (rules: CategoryRule[]) => Promise<void>;
   updateRulePreferences: (preferences: RulePreferences) => void;
   updateUserRule: (previous: CategoryRule, next: CategoryRule) => void;
@@ -197,6 +198,10 @@ export function useRuleSync(
     ]);
   }
 
+  function replaceLocalRules(nextRules: CategoryRule[]): void {
+    saveRules(nextRules);
+  }
+
   function updateUserRule(previous: CategoryRule, next: CategoryRule): void {
     const previousKey = ruleKey(previous);
     saveRules(userRules.map((rule) => (ruleKey(rule) === previousKey ? next : rule)));
@@ -244,6 +249,7 @@ export function useRuleSync(
     deleteUserRule,
     removeCommunityRules,
     removePrivateServerRules,
+    replaceLocalRules,
     replaceRules,
     updateRulePreferences,
     updateUserRule,

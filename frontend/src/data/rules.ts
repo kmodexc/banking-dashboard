@@ -42,6 +42,19 @@ export function saveLocalRules(rules: CategoryRule[]): void {
   localStorage.setItem(RULES_KEY, JSON.stringify(rules));
 }
 
+export function parseImportedRules(value: string): CategoryRule[] | null {
+  try {
+    const result = CategoryRuleSchema.array().safeParse(JSON.parse(value) as unknown);
+    return result.success ? deduplicateRules(result.data) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function serializeRules(rules: CategoryRule[]): string {
+  return `${JSON.stringify(deduplicateRules(rules), null, 2)}\n`;
+}
+
 export function loadCategoryOverrides(): Record<string, string> {
   const value = localStorage.getItem(CATEGORY_OVERRIDES_KEY);
   if (!value) return {};

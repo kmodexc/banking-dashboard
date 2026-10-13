@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type ReactElement } fro
 import { OidcClient } from './auth';
 import { getAppConfig } from './config';
 import { readTransactions } from './data/csv';
+import { loadSessionTransactions, saveSessionTransactions } from './data/session';
 import {
   applyCategoryOverrides,
   applyRules,
@@ -75,6 +76,7 @@ export function App(): ReactElement {
     localRules,
     removeCommunityRules,
     removePrivateServerRules,
+    replaceLocalRules,
     replaceRules,
     rulePreferences,
     ruleSyncStatus,
@@ -82,11 +84,16 @@ export function App(): ReactElement {
     updateUserRule,
     userRules,
   } = ruleSync;
-  const [rawTransactions, setRawTransactions] = useState<Transaction[]>([]);
+  const [rawTransactions, setRawTransactions] = useState<Transaction[]>(() =>
+    loadSessionTransactions(),
+  );
   const [period, setPeriod] = useState('');
   const [tab, setTab] = useState<'dashboard' | 'unknown' | 'categories'>('dashboard');
   const [loadError, setLoadError] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[] | null>(null);
+  useEffect(() => {
+    saveSessionTransactions(rawTransactions);
+  }, [rawTransactions]);
   const rules = useMemo(
     () =>
       activeRules.map((rule) => ({
@@ -338,6 +345,8 @@ export function App(): ReactElement {
                 <RuleManager
                   rules={managedRules}
                   categories={ruleCategoryOptions}
+                  rulesToExport={userRules}
+                  onImport={replaceLocalRules}
                   onUpdate={updateUserRule}
                   onDelete={deleteUserRule}
                 />

@@ -35,6 +35,19 @@ export const RulePreferencesSchema = z
   .strict();
 export type RulePreferences = z.infer<typeof RulePreferencesSchema>;
 
+export const TransactionSchema = z
+  .object({
+    id: z.string(),
+    date: z.string(),
+    period: z.string(),
+    recipient: z.string(),
+    purpose: z.string(),
+    type: z.string(),
+    amount: z.number(),
+    category: z.string(),
+  })
+  .strict();
+
 export const ClassificationRuleSchema = CategoryRuleSchema.extend({
   confidence: z.number().min(0).max(1),
 });
