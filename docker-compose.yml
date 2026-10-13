@@ -1,0 +1,73 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dkb_dashboard}
+      POSTGRES_USER: ${POSTGRES_USER:-dkb_dashboard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD to a strong database password}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-dkb_dashboard} -d ${POSTGRES_DB:-dkb_dashboard}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    env_file:
+      - .env
+    environment:
+      KEYCLOAK_ISSUER: >-
+        ${KEYCLOAK_ISSUER:?Set KEYCLOAK_ISSUER to your Keycloak realm issuer}
+      KEYCLOAK_CLIENT_ID: >-
+        ${KEYCLOAK_CLIENT_ID:?Set KEYCLOAK_CLIENT_ID to your public browser client}
+      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-}
+      MAX_CLASSIFICATION_TRANSACTIONS: ${MAX_CLASSIFICATION_TRANSACTIONS:-500}
+      MAX_CLASSIFICATION_REQUEST_BYTES: ${MAX_CLASSIFICATION_REQUEST_BYTES:-262144}
+      CLASSIFICATION_REQUESTS_PER_MINUTE: ${CLASSIFICATION_REQUESTS_PER_MINUTE:-10}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL, for example postgres://dkb_dashboard:password@db:5432/dkb_dashboard}
+      LEGACY_RULE_STORE_PATH: ${LEGACY_RULE_STORE_PATH:-/legacy-data/dkb-rules.json}
+      PROJECT_ROOT: /app
+    volumes:
+      - app-data:/legacy-data:ro
+    ports:
+      - '127.0.0.1:${APP_PORT:-8080}:8080'
+    command: ['/usr/local/bin/dkb-dashboard-api']
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - http://127.0.0.1:8080/healthz
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+volumes:
+  app-data:
+  db-data:

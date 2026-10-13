@@ -1,0 +1,43 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+build/
+dist/
+
+# Rust
+target/
+
+# Frontend
+node_modules/
+frontend/dist/
+.npm/
+
+# Browser test output
+playwright-report/
+test-results/
+blob-report/
+
+# Local data and databases
+*.csv
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs and OS/editor files
+*.log
+.DS_Store
+.idea/
+.vscode/

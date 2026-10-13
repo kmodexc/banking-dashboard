@@ -1,0 +1,31 @@
+# Apache runs on the Docker host. Replace the domain, certificate paths,
+# and both backend ports (8080) to match APP_PORT in .env.
+<VirtualHost *:80>
+    ServerName dashboard.example.com
+    Redirect permanent / https://dashboard.example.com/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName dashboard.example.com
+
+    SSLEngine On
+    SSLCertificateFile /etc/letsencrypt/live/dashboard.example.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/dashboard.example.com/privkey.pem
+
+    ProxyRequests Off
+    ProxyPreserveHost On
+
+    # Replace incoming forwarding headers at this public-facing proxy.
+    # mod_proxy adds the actual client address to X-Forwarded-For.
+    RequestHeader unset X-Forwarded-For
+    RequestHeader unset X-Forwarded-Host
+    RequestHeader unset X-Forwarded-Server
+    RequestHeader unset Forwarded
+    RequestHeader set X-Forwarded-Proto "https"
+
+    ProxyPass / http://127.0.0.1:8080/ connectiontimeout=5 timeout=120
+    ProxyPassReverse / http://127.0.0.1:8080/
+
+    ErrorLog ${APACHE_LOG_DIR}/dkb-dashboard-error.log
+    CustomLog ${APACHE_LOG_DIR}/dkb-dashboard-access.log combined
+</VirtualHost>

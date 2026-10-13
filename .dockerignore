@@ -1,0 +1,14 @@
+.env
+.git
+__pycache__/
+node_modules/
+.venv/
+target/
+frontend/dist/
+playwright-report/
+test-results/
+*.py[cod]
+*.csv
+converted.csv
+README.md
+GEMINI.md

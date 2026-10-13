@@ -1,0 +1,60 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check Rust code
+        run: cargo check --locked
+
+      - name: Run Rust tests
+        run: cargo test --locked
+
+      - name: Run Rust clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install frontend test dependencies
+        run: npm ci
+
+      - name: Audit frontend dependencies
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Check frontend types
+        run: npm run check:types
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run frontend unit tests
+        run: npm run test:unit
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser component tests
+        run: npm run test:components
