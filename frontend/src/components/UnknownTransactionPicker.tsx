@@ -12,6 +12,16 @@ export function UnknownTransactionPicker({
   selected: Transaction | undefined;
   onSelect: (transaction: Transaction | undefined) => void;
 }): ReactElement {
+  const selectedIndex = selected
+    ? transactions.findIndex((transaction) => transaction.id === selected.id)
+    : -1;
+
+  function moveSelection(offset: -1 | 1): void {
+    const nextIndex = selectedIndex + offset;
+    const nextTransaction = transactions[nextIndex];
+    if (nextTransaction) onSelect(nextTransaction);
+  }
+
   return (
     <article className="panel">
       <div className="panel-heading">
@@ -35,6 +45,26 @@ export function UnknownTransactionPicker({
           </option>
         ))}
       </select>
+      <div className="unknown-navigation" aria-label="Unknown transaction navigation">
+        <button
+          className="button secondary"
+          type="button"
+          aria-label="Previous unknown transaction"
+          disabled={selectedIndex <= 0}
+          onClick={() => moveSelection(-1)}
+        >
+          Previous
+        </button>
+        <button
+          className="button secondary"
+          type="button"
+          aria-label="Next unknown transaction"
+          disabled={selectedIndex < 0 || selectedIndex >= transactions.length - 1}
+          onClick={() => moveSelection(1)}
+        >
+          Next
+        </button>
+      </div>
       <div id="unknown-details" className="details">
         {selected ? (
           <>

@@ -79,6 +79,14 @@
 .category-editor {
   margin: 1.2rem 0 0;
 }
+.unknown-navigation {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+.unknown-navigation .button {
+  flex: 1;
+}
 .category-editor-label {
   display: block;
   margin-bottom: 0.55rem;
