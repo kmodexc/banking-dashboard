@@ -22,6 +22,7 @@ export function CategorizeUnknown({
   onAddRule,
   onAddRules,
   userRules,
+  categories: availableCategories = [...DEFAULT_CATEGORIES],
 }: {
   transactions: Transaction[];
   rules: CategoryRule[];
@@ -30,6 +31,7 @@ export function CategorizeUnknown({
   onAddRule: (rule: CategoryRule) => void;
   onAddRules: (rules: ClassificationRule[]) => void;
   userRules: CategoryRule[];
+  categories?: string[];
 }): ReactElement {
   const unknown = unknownTransactions(transactions);
   const [selectedId, setSelectedId] = useState(unknown[0]?.id ?? '');
@@ -37,7 +39,7 @@ export function CategorizeUnknown({
   const [category, setCategory] = useState('');
   const [column, setColumn] = useState<RuleColumn>('recipient');
   const selected = unknown.find((row) => row.id === selectedId) ?? unknown[0];
-  const categories = [...new Set([...DEFAULT_CATEGORIES, ...rules.map((rule) => rule.category)])];
+  const categories = [...new Set([...availableCategories, ...rules.map((rule) => rule.category)])];
 
   function selectTransaction(transaction: Transaction | undefined): void {
     setSelectedId(transaction?.id ?? '');

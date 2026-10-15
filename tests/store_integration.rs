@@ -65,8 +65,10 @@ async fn concurrent_replacements_for_one_user_commit_one_complete_collection(poo
     right_result.unwrap();
 
     let saved = store.private("same-user").await.unwrap();
+    let left_newest_first: Vec<_> = left.iter().cloned().rev().collect();
+    let right_newest_first: Vec<_> = right.iter().cloned().rev().collect();
     assert!(
-        saved == left || saved == right,
+        saved == left_newest_first || saved == right_newest_first,
         "replacement mixed two collections: {saved:?}"
     );
 }
@@ -94,6 +96,37 @@ async fn community_rules_are_idempotent_and_preserve_shared_contributors(pool: P
     assert_eq!(store.community().await.unwrap(), vec![shared.clone()]);
     store.remove_community("bob").await.unwrap();
     assert!(store.community().await.unwrap().is_empty());
+}
+
+#[sqlx::test(migrations = "./db/rust-migrations")]
+async fn persisted_rules_are_returned_newest_first(pool: PgPool) {
+    let store = RuleStore::from_pool(pool);
+    let older_private = rule("OLDER PRIVATE", "groceries", "recipient", None);
+    let newer_private = rule("NEWER PRIVATE", "mobility", "purpose", Some(0.9));
+
+    store
+        .replace_private("alice", &[older_private.clone(), newer_private.clone()])
+        .await
+        .unwrap();
+    assert_eq!(
+        store.private("alice").await.unwrap(),
+        vec![newer_private.clone(), older_private.clone()]
+    );
+
+    let older_community = rule("OLDER COMMUNITY", "groceries", "recipient", None);
+    let newer_community = rule("NEWER COMMUNITY", "items", "purpose", Some(0.8));
+    store
+        .add_community("alice", std::slice::from_ref(&older_community))
+        .await
+        .unwrap();
+    store
+        .add_community("alice", std::slice::from_ref(&newer_community))
+        .await
+        .unwrap();
+    assert_eq!(
+        store.community().await.unwrap(),
+        vec![newer_community, older_community]
+    );
 }
 
 #[sqlx::test(migrations = "./db/rust-migrations")]

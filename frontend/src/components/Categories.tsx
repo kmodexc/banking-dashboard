@@ -16,7 +16,6 @@ export function Categories({
   onRulePreferencesChange,
   onSyncRules,
   onDeleteServerRules,
-  onDeleteCommunityRules,
   ruleSyncStatus,
 }: {
   auth: AuthSnapshot;
@@ -30,7 +29,6 @@ export function Categories({
   onRulePreferencesChange: (preferences: RulePreferences) => void;
   onSyncRules: () => void;
   onDeleteServerRules: () => void;
-  onDeleteCommunityRules: () => void;
   ruleSyncStatus: string;
 }): ReactElement {
   return (
@@ -50,7 +48,6 @@ export function Categories({
         onRulePreferencesChange={onRulePreferencesChange}
         onSyncRules={onSyncRules}
         onDeleteServerRules={onDeleteServerRules}
-        onDeleteCommunityRules={onDeleteCommunityRules}
         ruleSyncStatus={ruleSyncStatus}
       />
     </section>

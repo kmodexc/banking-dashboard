@@ -15,6 +15,7 @@ import {
   categoryName,
   categoryStateWithAdded,
   loadUserCategoryState,
+  mergeCategoryStates,
   saveUserCategoryState,
   type CategoryEntry,
   type UserCategoryState,
@@ -73,11 +74,8 @@ export function App(): ReactElement {
     activeRules,
     addRule,
     addRules,
-    communityRules,
-    defaultRules,
     deleteUserRule,
-    localRules,
-    removeCommunityRules,
+    privateCategories,
     removePrivateServerRules,
     replaceLocalRules,
     replaceRules,
@@ -151,15 +149,13 @@ export function App(): ReactElement {
       });
     };
     add('user', userRules);
-    add('community', communityRules);
-    add('global', defaultRules);
     return result;
-  }, [communityRules, defaultRules, userCategoryState, userRules]);
+  }, [userCategoryState, userRules]);
   const ruleCategoryOptions = useMemo<RuleCategoryOption[]>(() => {
     const seen = new Set<string>();
     const result: RuleCategoryOption[] = [];
     categoryEntriesForUser.forEach((entry) => {
-      const value = entry.globalName ?? entry.name;
+      const value = entry.name;
       const key = value.toLocaleLowerCase();
       if (seen.has(key)) return;
       seen.add(key);
@@ -203,6 +199,7 @@ export function App(): ReactElement {
     if (!auth.token) return;
     saveUserCategoryState(next, categoryUserId);
     setCategoryStateStore({ userId: categoryUserId, state: next });
+    if (rulePreferences.storePrivateRules) void replaceRules(userRules, next);
   }
 
   function addUserCategory(name: string): void {
@@ -211,41 +208,49 @@ export function App(): ReactElement {
 
   function renameUserCategory(entry: CategoryEntry, name: string): void {
     if (!auth.token) return;
-    if (entry.globalName) {
-      const renamed = { ...userCategoryState.renamed };
-      if (name === entry.globalName) delete renamed[entry.globalName];
-      else renamed[entry.globalName] = name;
-      updateUserCategories({ ...userCategoryState, renamed });
-      return;
-    }
-    const added = userCategoryState.added.map((value) => (value === entry.name ? name : value));
-    const deleted = userCategoryState.deleted.filter((value) => value !== entry.name);
+    const categories = userCategoryState.categories.map((category) =>
+      category.id === entry.id
+        ? { ...category, name, aliases: [...new Set([...category.aliases, category.name])] }
+        : category,
+    );
     updateUserCategories({
       ...userCategoryState,
-      renamed: { ...userCategoryState.renamed, [entry.name]: name },
-      added,
-      deleted,
+      categories,
     });
   }
 
   function deleteUserCategory(entry: CategoryEntry): void {
     if (!auth.token) return;
-    if (entry.globalName) {
-      const renamed = { ...userCategoryState.renamed };
-      delete renamed[entry.globalName];
-      updateUserCategories({
-        ...userCategoryState,
-        renamed,
-        deleted: [...new Set([...userCategoryState.deleted, entry.globalName])],
-      });
-      return;
-    }
     updateUserCategories({
       ...userCategoryState,
-      added: userCategoryState.added.filter((value) => value !== entry.name),
-      deleted: [...new Set([...userCategoryState.deleted, entry.name])],
+      categories: userCategoryState.categories.filter((category) => category.id !== entry.id),
+      deletedIds: [...new Set([...userCategoryState.deletedIds, entry.id])],
     });
   }
+
+  useEffect(() => {
+    if (!auth.token || privateCategories === undefined) return;
+    if (privateCategories) {
+      const merged = mergeCategoryStates(userCategoryState, privateCategories);
+      if (JSON.stringify(merged) !== JSON.stringify(userCategoryState)) {
+        saveUserCategoryState(merged, categoryUserId);
+        // The server response is an external state source; adopt its ID-based merge locally.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCategoryStateStore({ userId: categoryUserId, state: merged });
+        if (rulePreferences.storePrivateRules) void replaceRules(userRules, merged);
+      }
+    } else if (rulePreferences.storePrivateRules) {
+      void replaceRules(userRules, userCategoryState);
+    }
+  }, [
+    auth.token,
+    categoryUserId,
+    privateCategories,
+    replaceRules,
+    rulePreferences.storePrivateRules,
+    userCategoryState,
+    userRules,
+  ]);
 
   return (
     <>
@@ -329,6 +334,7 @@ export function App(): ReactElement {
                 client={client}
                 onAddRule={addRule}
                 onAddRules={addRules}
+                categories={categories}
                 userRules={userRules.map((rule) => ({
                   ...rule,
                   category: categoryName(userCategoryState, rule.category),
@@ -347,9 +353,8 @@ export function App(): ReactElement {
                   onImport={updateUserCategories}
                   rulePreferences={rulePreferences}
                   onRulePreferencesChange={updateRulePreferences}
-                  onSyncRules={() => void replaceRules(localRules)}
+                  onSyncRules={() => void replaceRules(userRules, userCategoryState)}
                   onDeleteServerRules={() => void removePrivateServerRules()}
-                  onDeleteCommunityRules={() => void removeCommunityRules()}
                   ruleSyncStatus={ruleSyncStatus}
                 />
                 <RuleManager

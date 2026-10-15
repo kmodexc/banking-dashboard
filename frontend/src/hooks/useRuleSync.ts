@@ -13,7 +13,8 @@ import {
   saveRulePreferences,
 } from '../data/preferences';
 import { deduplicateRules, loadLocalRules, ruleKey, saveLocalRules } from '../data/rules';
-import { CategoryRuleSchema, DEFAULT_CATEGORIES } from '../types';
+import type { UserCategoryState } from '../data/categories';
+import { DEFAULT_CATEGORIES } from '../types';
 import type { AuthSnapshot, CategoryRule, ClassificationRule, RulePreferences } from '../types';
 
 const config = getAppConfig();
@@ -29,6 +30,7 @@ export function useRuleSync(
   activeRules: CategoryRule[];
   communityRules: CategoryRule[];
   defaultRules: CategoryRule[];
+  privateCategories: UserCategoryState | null | undefined;
   localRules: CategoryRule[];
   rulePreferences: RulePreferences;
   ruleSyncStatus: string;
@@ -39,11 +41,18 @@ export function useRuleSync(
   removeCommunityRules: () => Promise<void>;
   removePrivateServerRules: () => Promise<void>;
   replaceLocalRules: (rules: CategoryRule[]) => void;
-  replaceRules: (rules: CategoryRule[]) => Promise<void>;
+  replaceRules: (
+    rules: CategoryRule[],
+    categoriesOrPreferences?: UserCategoryState | RulePreferences,
+    preferences?: RulePreferences,
+  ) => Promise<void>;
   updateRulePreferences: (preferences: RulePreferences) => void;
   updateUserRule: (previous: CategoryRule, next: CategoryRule) => void;
 } {
-  const [defaultRules, setDefaultRules] = useState<CategoryRule[]>([]);
+  const [defaultRules] = useState<CategoryRule[]>([]);
+  const [privateCategories, setPrivateCategories] = useState<UserCategoryState | null | undefined>(
+    undefined,
+  );
   const [localRules, setLocalRules] = useState<CategoryRule[]>(() => loadLocalRules());
   const [rulePreferencesStore, setRulePreferencesStore] = useState<{
     userId: string | null;
@@ -54,7 +63,6 @@ export function useRuleSync(
   const [communityRules, setCommunityRules] = useState<CategoryRule[]>([]);
   const [ruleSyncStatus, setRuleSyncStatus] = useState('');
   const previousUserId = useRef<string | null>(null);
-  const loadedGlobalRulesKey = useRef<string | null>(null);
   const rulePreferences =
     rulePreferencesStore.userId === (auth.token ? categoryUserId : null)
       ? rulePreferencesStore.preferences
@@ -75,30 +83,29 @@ export function useRuleSync(
     [localRules, privateRulesForUser],
   );
   const activeRules = useMemo(
-    () => [
-      ...localRules,
-      ...privateRulesForUser,
-      ...(rulePreferences.useCommunityRules ? communityRules : []),
-      ...defaultRules,
-    ],
-    [
-      communityRules,
-      defaultRules,
-      localRules,
-      privateRulesForUser,
-      rulePreferences.useCommunityRules,
-    ],
+    () => [...localRules, ...privateRulesForUser],
+    [localRules, privateRulesForUser],
   );
 
   const replaceRules = useCallback(
-    async (nextRules: CategoryRule[], preferences?: RulePreferences): Promise<void> => {
+    async (
+      nextRules: CategoryRule[],
+      categoriesOrPreferences?: UserCategoryState | RulePreferences,
+      preferences?: RulePreferences,
+    ): Promise<void> => {
+      const categories =
+        categoriesOrPreferences && 'categories' in categoriesOrPreferences
+          ? categoriesOrPreferences
+          : undefined;
       const activePreferences =
         preferences ??
-        ({
-          storePrivateRules,
-          useCommunityRules,
-          contributeRules: contributeRulesPreference,
-        } satisfies RulePreferences);
+        (categoriesOrPreferences && 'storePrivateRules' in categoriesOrPreferences
+          ? categoriesOrPreferences
+          : {
+              storePrivateRules,
+              useCommunityRules,
+              contributeRules: contributeRulesPreference,
+            });
       if (!auth.token) {
         setRuleSyncStatus('Sign in to sync rules on the server.');
         return;
@@ -111,9 +118,10 @@ export function useRuleSync(
       setRuleSyncStatus('Syncing rules…');
       try {
         if (activePreferences.storePrivateRules) {
-          await replaceStoredRules(config, auth.token, uniqueRules);
+          await replaceStoredRules(config, auth.token, uniqueRules, categories);
           setServerRulesUserId(categoryUserId);
           setServerRules(uniqueRules);
+          if (categories) setPrivateCategories(categories);
         }
         if (activePreferences.contributeRules) {
           const eligibleRules = uniqueRules.filter((rule) =>
@@ -128,30 +136,6 @@ export function useRuleSync(
     },
     [auth.token, categoryUserId, storePrivateRules, useCommunityRules, contributeRulesPreference],
   );
-
-  useEffect(() => {
-    if (!auth.token || !useCommunityRules) return;
-    const globalRulesKey = `${auth.token}:${categoryUserId}`;
-    if (loadedGlobalRulesKey.current === globalRulesKey) return;
-    loadedGlobalRulesKey.current = globalRulesKey;
-
-    void fetch('/default-rules.json')
-      .then((response) =>
-        response.ok
-          ? (response.json() as Promise<unknown>)
-          : Promise.reject(new Error('Could not load default rules')),
-      )
-      .then((value: unknown) => {
-        if (!Array.isArray(value)) throw new Error('Default rules must be an array');
-        setDefaultRules(
-          value.flatMap((rule) => {
-            const result = CategoryRuleSchema.safeParse(rule);
-            return result.success ? [result.data] : [];
-          }),
-        );
-      })
-      .catch(() => setDefaultRules([]));
-  }, [auth.token, categoryUserId, useCommunityRules]);
 
   useEffect(() => {
     let active = true;
@@ -169,6 +153,7 @@ export function useRuleSync(
         setServerRulesUserId(categoryUserId);
         setServerRules(storePrivateRules ? result.private : []);
         setCommunityRules(useCommunityRules ? result.community : []);
+        setPrivateCategories(storePrivateRules ? (result.categories ?? null) : null);
         setRuleSyncStatus('Shared rules loaded.');
         if (isNewLogin && localRules.length && (storePrivateRules || contributeRulesPreference)) {
           void replaceRules(localRules);
@@ -245,6 +230,7 @@ export function useRuleSync(
       await deleteStoredRules(config, auth.token);
       setServerRulesUserId(categoryUserId);
       setServerRules([]);
+      setPrivateCategories(null);
       setRuleSyncStatus('Private server rules deleted.');
     } catch (error: unknown) {
       setRuleSyncStatus(`Could not delete private server rules: ${errorMessage(error)}`);
@@ -266,6 +252,7 @@ export function useRuleSync(
     activeRules,
     communityRules,
     defaultRules,
+    privateCategories,
     localRules,
     rulePreferences,
     ruleSyncStatus,

@@ -5,8 +5,8 @@ export const RULE_PREFERENCES_KEY = 'dkb-dashboard-rule-preferences-v1';
 
 export const DEFAULT_RULE_PREFERENCES: RulePreferences = {
   storePrivateRules: true,
-  useCommunityRules: true,
-  contributeRules: true,
+  useCommunityRules: false,
+  contributeRules: false,
 };
 
 function storageKey(userId: string | null): string | null {

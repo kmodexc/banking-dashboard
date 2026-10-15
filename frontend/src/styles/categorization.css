@@ -420,17 +420,20 @@
 }
 .rule-list {
   display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.1rem 0 0.1rem 1.5rem;
   max-height: 42rem;
   overflow: auto;
-  border-top: 1px solid var(--line);
 }
 .rule-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.7rem 0;
-  border-bottom: 1px solid var(--line);
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: var(--wash);
 }
 .rule-row-content {
   display: flex;
@@ -449,7 +452,7 @@
 .rule-row-category {
   padding: 0.2rem 0.5rem;
   border-radius: 999px;
-  background: var(--wash);
+  background: var(--surface);
   font-weight: 650;
 }
 .rule-source {

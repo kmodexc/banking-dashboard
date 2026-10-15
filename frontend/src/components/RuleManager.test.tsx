@@ -13,17 +13,17 @@ const rules: ManagedRule[] = [
   {
     rule: { keyword: 'REWE', category: 'groceries', column: 'recipient' },
     categoryLabel: 'groceries',
-    source: 'global',
+    source: 'user',
   },
   {
     rule: { keyword: 'EDEKA', category: 'groceries', column: 'recipient' },
     categoryLabel: 'groceries',
-    source: 'community',
+    source: 'user',
   },
 ];
 
 describe('rule manager', () => {
-  it('shows rule sources and only offers actions for user rules', () => {
+  it('shows personal rules with edit and delete actions', () => {
     render(
       <RuleManager
         rules={rules}
@@ -36,11 +36,39 @@ describe('rule manager', () => {
       />,
     );
 
-    expect(screen.getByText('Your rule')).toBeInTheDocument();
-    expect(screen.getByText('Global')).toBeInTheDocument();
-    expect(screen.getByText('Community')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Edit' })).toHaveLength(1);
-    expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Edit' })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(3);
+  });
+
+  it('keeps the supplied newest-first order in the rule list', () => {
+    const newest: ManagedRule = {
+      rule: { keyword: 'NEW SHOP', category: 'groceries', column: 'recipient' },
+      categoryLabel: 'groceries',
+      source: 'user',
+    };
+    const older: ManagedRule = {
+      rule: { keyword: 'OLD SHOP', category: 'groceries', column: 'recipient' },
+      categoryLabel: 'groceries',
+      source: 'user',
+    };
+    render(
+      <RuleManager
+        rules={[newest, older]}
+        categories={[{ value: 'groceries', label: 'groceries' }]}
+        rulesToExport={[newest.rule, older.rule]}
+        onImport={vi.fn()}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRemoveAll={vi.fn()}
+      />,
+    );
+
+    const rows = Array.from(
+      screen.getByLabelText('Categorization rule list').querySelectorAll('.rule-row'),
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent('NEW SHOP');
+    expect(rows[1]).toHaveTextContent('OLD SHOP');
   });
 
   it('edits and deletes a user rule', () => {

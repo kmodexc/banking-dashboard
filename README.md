@@ -10,9 +10,9 @@ The app uses a configured Keycloak realm for access control. Gemini credentials 
   - **Financial Dashboard:** Monthly breakdown of income, expenses, and net balance with an interactive category chart.
   - **Categorize Unknown:** An interactive UI to label unrecognized transactions and update local rules.
   - **AI Auto-Categorization:** Uses Google Gemini to automatically propose and apply categorization rules based on transaction context.
-  - **Categories:** Manage user-specific category changes and choose whether rules stay local, sync privately, or contribute eligible global-category rules to the community.
-- **Local rules:** The public build starts with no merchant-specific default rules; rules remain local before sign-in and are automatically synchronized to the enabled destinations after sign-in.
-- **Shared rules:** Authenticated users default to storing their own rules privately, using community rules, and contributing rules that use only global categories. These options can be disabled. Custom-category rules are never shared with the community.
+  - **Categories:** Manage personal categories with stable internal IDs, rename them without breaking rule associations, and optionally save them privately online.
+- **Local rules:** The public build starts with no merchant-specific default or global rules; rules remain local before sign-in and are automatically synchronized to the private account after sign-in when enabled.
+- **Private storage:** Authenticated users can save their personal categories and rules to their private account. They are never shared with other users.
 - **AI categorization:** Sends only selected unknown transactions to the authenticated API.
 
 ## Prerequisites
@@ -142,4 +142,4 @@ npm run test:all
 
 ## Managing Categories
 
-Categorization rules are applied in the browser. Before sign-in, rules are local-only. New signed-in users default to private storage, community-rule consumption, and community sharing; each option can be disabled. When community-rule consumption is enabled, the server's global rules and community rules are downloaded together. The API stores private rules under that user's Keycloak subject. PostgreSQL accepts only rules using the bundled global categories for community sharing and stores deduplicated rules without transaction data. Local rules that existed before sign-in are synchronized automatically after login when server options are enabled. Private replacement and community changes are committed atomically, with database constraints protecting rule shape, category references, and duplicate keys. Users can delete their private server copy and remove their own community contributions from the Categories page.
+Categorization rules are applied in the browser. Before sign-in, categories and rules are local-only. After sign-in, the only server option is a private copy under the user's Keycloak subject; categories are stored with stable IDs and aliases so renaming a category does not break associated rules. Local categories and rules that existed before sign-in are synchronized automatically after login when private storage is enabled. The checked-in database migration adds private category storage without removing the existing rule tables, and the mounted legacy `dkb-rules.json` import remains compatible with old name-based rules.

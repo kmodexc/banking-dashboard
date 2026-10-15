@@ -122,8 +122,8 @@ export function CategoryEditor({
         <div>
           <h2>Categories</h2>
           <p className="muted">
-            Global categories are read-only. Your changes apply only to you and stay in this
-            browser.
+            All categories are personal. Your changes apply only to you and stay in this browser
+            until you choose private online storage.
           </p>
         </div>
         <div className="category-actions">
@@ -170,9 +170,7 @@ export function CategoryEditor({
         {entries.map((entry) => (
           <div className="category-row" key={entry.key}>
             <div>
-              <span className="category-source">
-                {entry.source === 'global' ? 'Global' : 'User'}
-              </span>
+              <span className="category-source">Personal</span>
               <input
                 aria-label={`${entry.name} category name`}
                 maxLength={80}

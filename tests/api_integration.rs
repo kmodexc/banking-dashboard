@@ -49,7 +49,13 @@ async fn authenticated_private_rules_round_trip_through_http(pool: PgPool) {
         .unwrap();
     assert_eq!(get.status(), reqwest::StatusCode::OK);
     let get_body: serde_json::Value = get.json().await.unwrap();
-    assert_eq!(get_body["private"], rules()["rules"]);
+    assert_eq!(
+        get_body["private"],
+        json!([
+            {"keyword": "Miete", "category": "rent", "column": "purpose"},
+            {"keyword": "REWE", "category": "groceries", "column": "recipient", "confidence": 0.9}
+        ])
+    );
     assert!(get_body["community"].as_array().unwrap().is_empty());
 
     let saved = api.store.private("user-a").await.unwrap();
@@ -64,6 +70,39 @@ async fn authenticated_private_rules_round_trip_through_http(pool: PgPool) {
         .unwrap();
     assert_eq!(delete.status(), reqwest::StatusCode::OK);
     assert!(api.store.private("user-a").await.unwrap().is_empty());
+}
+
+#[sqlx::test(migrations = "./db/rust-migrations")]
+async fn private_categories_round_trip_by_stable_id(pool: PgPool) {
+    let (oidc, api, client) = server(pool).await;
+    let bearer = token(&oidc.issuer, "user-a");
+    let categories = json!({
+        "categories": [
+            {"id": "category-1", "name": "Food", "aliases": ["groceries"]}
+        ],
+        "deletedIds": []
+    });
+
+    let put = client
+        .put(format!("{}/api/rules", api.base_url))
+        .header("host", "127.0.0.1")
+        .bearer_auth(&bearer)
+        .json(&json!({"rules": [], "categories": categories}))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(put.status(), reqwest::StatusCode::OK);
+
+    let get = client
+        .get(format!("{}/api/rules", api.base_url))
+        .header("host", "127.0.0.1")
+        .bearer_auth(&bearer)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(get.status(), reqwest::StatusCode::OK);
+    let body: serde_json::Value = get.json().await.unwrap();
+    assert_eq!(body["categories"], categories);
 }
 
 #[sqlx::test(migrations = "./db/rust-migrations")]

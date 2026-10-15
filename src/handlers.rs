@@ -88,12 +88,17 @@ pub async fn get_rules(
     Query(query): Query<RuleQuery>,
 ) -> Result<Json<RuleCollectionResponse>, AppError> {
     let private = state.store.private(&user.subject).await?;
+    let categories = state.store.private_categories(&user.subject).await?;
     let community = if query.include_community {
         state.store.community().await?
     } else {
         Vec::new()
     };
-    Ok(Json(RuleCollectionResponse { private, community }))
+    Ok(Json(RuleCollectionResponse {
+        private,
+        community,
+        categories,
+    }))
 }
 
 pub async fn replace_private(
@@ -106,9 +111,17 @@ pub async fn replace_private(
         .store
         .replace_private(&user.subject, &collection.rules)
         .await?;
+    if let Some(categories) = &collection.categories {
+        state
+            .store
+            .replace_private_categories(&user.subject, categories)
+            .await?;
+    }
+    let categories = state.store.private_categories(&user.subject).await?;
     Ok(Json(RuleCollectionResponse {
         private: collection.rules,
         community: Vec::new(),
+        categories,
     }))
 }
 
@@ -117,9 +130,11 @@ pub async fn delete_private(
     user: AuthUser,
 ) -> Result<Json<RuleCollectionResponse>, AppError> {
     state.store.replace_private(&user.subject, &[]).await?;
+    state.store.delete_private_categories(&user.subject).await?;
     Ok(Json(RuleCollectionResponse {
         private: Vec::new(),
         community: Vec::new(),
+        categories: None,
     }))
 }
 
@@ -146,6 +161,7 @@ pub async fn add_community(
     Ok(Json(RuleCollectionResponse {
         private: Vec::new(),
         community,
+        categories: None,
     }))
 }
 
@@ -157,5 +173,6 @@ pub async fn delete_community(
     Ok(Json(RuleCollectionResponse {
         private: Vec::new(),
         community: Vec::new(),
+        categories: None,
     }))
 }

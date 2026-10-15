@@ -23,6 +23,22 @@ pub struct Rule {
     pub confidence: Option<f64>,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct Category {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub aliases: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct CategoryState {
+    #[serde(default)]
+    pub categories: Vec<Category>,
+    #[serde(rename = "deletedIds", default)]
+    pub deleted_ids: Vec<String>,
+}
+
 impl Rule {
     pub fn validate(&self) -> Result<(), &'static str> {
         if !(3..=200).contains(&self.keyword.trim().chars().count()) {
@@ -123,6 +139,8 @@ impl ClassificationRule {
 pub struct RuleCollection {
     #[serde(default)]
     pub rules: Vec<Rule>,
+    #[serde(default)]
+    pub categories: Option<CategoryState>,
 }
 
 impl RuleCollection {
@@ -133,6 +151,23 @@ impl RuleCollection {
         for rule in &self.rules {
             rule.validate().map_err(str::to_owned)?;
         }
+        if let Some(categories) = &self.categories {
+            if categories.categories.len() > 100 {
+                return Err("categories must contain at most 100 entries".into());
+            }
+            if categories
+                .categories
+                .iter()
+                .any(|category| category.id.trim().is_empty() || category.id.chars().count() > 160)
+            {
+                return Err("category ids must contain 1 to 160 characters".into());
+            }
+            if categories.categories.iter().any(|category| {
+                category.name.trim().is_empty() || category.name.chars().count() > 80
+            }) {
+                return Err("category names must contain 1 to 80 characters".into());
+            }
+        }
         Ok(())
     }
 }
@@ -141,6 +176,7 @@ impl RuleCollection {
 pub struct RuleCollectionResponse {
     pub private: Vec<Rule>,
     pub community: Vec<Rule>,
+    pub categories: Option<CategoryState>,
 }
 
 #[derive(Debug, Serialize)]

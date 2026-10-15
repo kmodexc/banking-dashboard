@@ -4,11 +4,11 @@ import { DEFAULT_RULE_PREFERENCES, loadRulePreferences, saveRulePreferences } fr
 describe('rule preferences', () => {
   beforeEach(() => localStorage.clear());
 
-  it('defaults authenticated users to private storage and both community actions', () => {
+  it('defaults authenticated users to private storage only', () => {
     expect(DEFAULT_RULE_PREFERENCES).toEqual({
       storePrivateRules: true,
-      useCommunityRules: true,
-      contributeRules: true,
+      useCommunityRules: false,
+      contributeRules: false,
     });
   });
 

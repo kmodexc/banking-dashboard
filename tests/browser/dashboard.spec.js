@@ -150,7 +150,7 @@ test('shows a clear warning when automatic rule synchronization fails', async ({
   await page.locator('#rule-category').fill('items');
   await page.locator('#rule-form button[type=submit]').click();
   await page.locator('[data-tab="categories"]').click();
-  await page.getByRole('button', { name: 'Sync selected rules now' }).click();
+  await page.getByRole('button', { name: 'Sync privately now' }).click();
 
   await expect(page.locator('#rule-sync-error')).toContainText('Rule synchronization warning:');
   await expect(page.locator('#rule-sync-error')).toContainText('Could not sync rules');

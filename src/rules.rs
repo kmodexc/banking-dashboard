@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use sqlx::{PgPool, Row};
 
-use crate::models::{GLOBAL_CATEGORIES, Rule};
+use crate::models::{CategoryState, GLOBAL_CATEGORIES, Rule};
 
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./db/rust-migrations");
 
@@ -65,7 +65,7 @@ impl RuleStore {
     pub async fn private(&self, subject: &str) -> Result<Vec<Rule>, sqlx::Error> {
         let rows = sqlx::query_as::<_, DbRule>(
             "SELECT keyword, category, rule_column, confidence
-             FROM private_rules WHERE subject = $1 ORDER BY id",
+             FROM private_rules WHERE subject = $1 ORDER BY id DESC",
         )
         .bind(subject)
         .fetch_all(&self.pool)
@@ -109,10 +109,54 @@ impl RuleStore {
         transaction.commit().await
     }
 
+    pub async fn private_categories(
+        &self,
+        subject: &str,
+    ) -> Result<Option<CategoryState>, sqlx::Error> {
+        let value = sqlx::query_scalar::<_, serde_json::Value>(
+            "SELECT categories FROM private_categories WHERE subject = $1",
+        )
+        .bind(subject)
+        .fetch_optional(&self.pool)
+        .await?;
+        value
+            .map(|value| {
+                serde_json::from_value(value)
+                    .map_err(|error| sqlx::Error::Decode(Box::new(error)))
+            })
+            .transpose()
+    }
+
+    pub async fn replace_private_categories(
+        &self,
+        subject: &str,
+        categories: &CategoryState,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            "INSERT INTO private_categories (subject, categories)
+             VALUES ($1, $2)
+             ON CONFLICT (subject) DO UPDATE
+             SET categories = EXCLUDED.categories, updated_at = now()",
+        )
+        .bind(subject)
+        .bind(serde_json::to_value(categories).expect("category state serializes"))
+        .execute(&self.pool)
+        .await
+        .map(|_| ())
+    }
+
+    pub async fn delete_private_categories(&self, subject: &str) -> Result<(), sqlx::Error> {
+        sqlx::query("DELETE FROM private_categories WHERE subject = $1")
+            .bind(subject)
+            .execute(&self.pool)
+            .await
+            .map(|_| ())
+    }
+
     pub async fn community(&self) -> Result<Vec<Rule>, sqlx::Error> {
         let rows = sqlx::query_as::<_, DbRule>(
             "SELECT keyword, category, rule_column, confidence
-             FROM community_rules ORDER BY id",
+             FROM community_rules ORDER BY id DESC",
         )
         .fetch_all(&self.pool)
         .await?;

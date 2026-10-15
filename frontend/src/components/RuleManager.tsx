@@ -3,7 +3,7 @@ import { CategoryRuleSchema, RuleColumnSchema } from '../types';
 import type { CategoryRule } from '../types';
 import { parseImportedRules, ruleKey, serializeRules } from '../data/rules';
 
-export type ManagedRuleSource = 'user' | 'community' | 'global';
+export type ManagedRuleSource = 'user';
 
 export interface ManagedRule {
   rule: CategoryRule;
@@ -15,12 +15,6 @@ export interface RuleCategoryOption {
   value: string;
   label: string;
 }
-
-const sourceLabels: Record<ManagedRuleSource, string> = {
-  user: 'Your rule',
-  community: 'Community',
-  global: 'Global',
-};
 
 export function RuleManager({
   rules,
@@ -51,7 +45,7 @@ export function RuleManager({
     () =>
       rules.filter((entry) => {
         if (!normalizedFilter) return true;
-        return [entry.rule.keyword, entry.categoryLabel, sourceLabels[entry.source]]
+        return [entry.rule.keyword, entry.categoryLabel]
           .join(' ')
           .toLocaleLowerCase()
           .includes(normalizedFilter);
@@ -145,8 +139,7 @@ export function RuleManager({
         <div>
           <h2>Categorization rules</h2>
           <p className="muted">
-            Your rules can be changed or deleted. Global and community rules are available for
-            reference and remain read-only.
+            All rules are personal and can be changed or deleted. Newest rules are shown first.
           </p>
         </div>
         <span className="muted small">
@@ -190,12 +183,12 @@ export function RuleManager({
         />
       </label>
       {message && <p className="notice category-auth-notice">{message}</p>}
-      <div className="rule-list" aria-label="Categorization rule list">
+      <ol className="rule-list" aria-label="Categorization rule list">
         {visibleRules.map((entry) => {
           const key = ruleKey(entry.rule);
           const isEditing = editingKey === key && draft;
           return (
-            <div className="rule-row" key={`${entry.source}:${key}`}>
+            <li className="rule-row" key={`${entry.source}:${key}`}>
               {isEditing ? (
                 <RuleEditor
                   draft={draft}
@@ -210,34 +203,29 @@ export function RuleManager({
                     <strong>{entry.rule.keyword}</strong>
                     <span className="rule-row-category">{entry.categoryLabel}</span>
                     <span className="rule-row-column">Searches {entry.rule.column}</span>
-                    <span className={`rule-source rule-source-${entry.source}`}>
-                      {sourceLabels[entry.source]}
-                    </span>
                   </div>
-                  {entry.source === 'user' && (
-                    <div className="category-row-actions">
-                      <button
-                        className="button secondary"
-                        type="button"
-                        onClick={() => startEditing(entry)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="button secondary danger-button"
-                        type="button"
-                        onClick={() => deleteRule(entry.rule)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
+                  <div className="category-row-actions">
+                    <button
+                      className="button secondary"
+                      type="button"
+                      onClick={() => startEditing(entry)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="button secondary danger-button"
+                      type="button"
+                      onClick={() => deleteRule(entry.rule)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </>
               )}
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ol>
       {!visibleRules.length && <p className="muted">No rules match this filter.</p>}
       {deleteAllOpen && (
         <div className="modal-backdrop">
@@ -249,8 +237,8 @@ export function RuleManager({
           >
             <h2 id="remove-all-rules-title">Remove all rules?</h2>
             <p>
-              This removes all editable user rules from this browser and, when enabled, from the
-              private server copy. Shared and global read-only rules will remain available.
+              This removes all personal rules from this browser and, when enabled, from the private
+              server copy.
             </p>
             <label htmlFor="remove-all-rules-confirmation">
               Type <code>delete</code> to confirm
