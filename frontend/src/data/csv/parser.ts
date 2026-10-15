@@ -10,7 +10,8 @@ export function rowError(columns: string[], index: number, message: string): Err
 export function parseCsv(text: string): string[][] {
   const source = text.replace(/^\uFEFF/, '');
   // Bank headers identify the delimiter without confusing decimal commas with columns.
-  const delimiter = source.match(/^"?(?:Belegdatum|Buchungstag)"?([;,\t])/im)?.[1] ?? ';';
+  const delimiter =
+    source.match(/^"?(?:Belegdatum|Buchungstag|Buchungsdatum)"?([;,\t])/im)?.[1] ?? ';';
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';

@@ -30,13 +30,15 @@ test('persists an authenticated rule through the built bundle and real API', asy
   await expect(page.locator('#unknown-count')).toHaveText('0 rows');
 
   await page.getByRole('button', { name: 'Categories' }).click();
+  const privateOption = page.getByRole('checkbox', { name: /Save a private copy/ });
+  await expect(privateOption).toBeChecked();
   const privatePut = page.waitForResponse(
     (response) =>
       response.url().endsWith('/api/rules') &&
       response.request().method() === 'PUT' &&
       response.status() === 200,
   );
-  await page.getByRole('checkbox', { name: /Save a private copy/ }).check();
+  await page.getByRole('button', { name: 'Sync selected rules now' }).click();
   await privatePut;
 
   await page.evaluate(() => localStorage.removeItem('dkb-dashboard-rules-v1'));

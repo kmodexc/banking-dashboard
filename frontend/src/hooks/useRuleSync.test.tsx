@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseImportedRules, saveLocalRules } from '../data/rules';
-import { DEFAULT_RULE_PREFERENCES, saveRulePreferences } from '../data/preferences';
+import { saveRulePreferences } from '../data/preferences';
 import type { AuthSnapshot, CategoryRule } from '../types';
 import { useRuleSync } from './useRuleSync';
 
@@ -83,6 +83,15 @@ const privateRule: CategoryRule = {
 
 const importedRuleSet = [globalRule, privateRule];
 const ruleOrigins = ['created', 'imported'] as const;
+const localOnlyPreferences = {
+  storePrivateRules: false,
+  useCommunityRules: false,
+  contributeRules: false,
+};
+type SyncPreferences = Pick<
+  (typeof syncCombinations)[number],
+  'storePrivateRules' | 'useCommunityRules' | 'contributeRules'
+>;
 
 function response(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), {
@@ -133,7 +142,7 @@ describe('useRuleSync', () => {
   });
 
   async function expectConfiguredSync(
-    preferences: (typeof syncCombinations)[number],
+    preferences: SyncPreferences,
     expectedPrivate: CategoryRule[],
     expectedCommunity: CategoryRule[],
     expectCommunityFetch = true,
@@ -171,10 +180,21 @@ describe('useRuleSync', () => {
       );
       expect(requestBody(communityUpload?.init)).toEqual({ rules: expectedCommunity });
     }
+    if (!preferences.storePrivateRules && !preferences.contributeRules) {
+      expect(
+        calls.some(({ url, init }) => url.endsWith('/api/rules') && init?.method === 'PUT'),
+      ).toBe(false);
+      expect(
+        calls.some(
+          ({ url, init }) => url.endsWith('/api/community/rules') && init?.method === 'POST',
+        ),
+      ).toBe(false);
+    }
   }
 
   it('keeps local rules local until opted in, then separates private and community uploads', async () => {
     saveLocalRules([globalRule, privateRule]);
+    saveRulePreferences(localOnlyPreferences, 'alice');
     const { result } = renderHook(() => useRuleSync(signedIn, 'alice'));
 
     await waitFor(() =>
@@ -184,7 +204,7 @@ describe('useRuleSync', () => {
 
     act(() => {
       result.current.updateRulePreferences({
-        ...DEFAULT_RULE_PREFERENCES,
+        ...localOnlyPreferences,
         storePrivateRules: true,
         contributeRules: true,
       });
@@ -207,9 +227,51 @@ describe('useRuleSync', () => {
     expect(requestBody(communityUpload?.init)).toEqual({ rules: [globalRule] });
   });
 
+  it('automatically syncs pre-login rules on login with all default destinations enabled', async () => {
+    saveLocalRules([globalRule, privateRule]);
+    const view = renderHook(
+      ({ auth }: { auth: AuthSnapshot }) =>
+        useRuleSync(auth, auth.user?.sub ?? 'authenticated-user'),
+      { initialProps: { auth: signedOut } },
+    );
+
+    await waitFor(() =>
+      expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
+    );
+    view.rerender({ auth: signedIn });
+
+    await waitFor(() =>
+      expect(
+        calls.some(({ url, init }) => url.endsWith('/api/rules') && init?.method === 'PUT'),
+      ).toBe(true),
+    );
+    await waitFor(() =>
+      expect(
+        calls.some(
+          ({ url, init }) => url.endsWith('/api/community/rules') && init?.method === 'POST',
+        ),
+      ).toBe(true),
+    );
+    expect(
+      requestBody(
+        calls.find(({ url, init }) => url.endsWith('/api/rules') && init?.method === 'PUT')?.init,
+      ),
+    ).toEqual({ rules: [globalRule, privateRule] });
+    expect(
+      requestBody(
+        calls.find(
+          ({ url, init }) => url.endsWith('/api/community/rules') && init?.method === 'POST',
+        )?.init,
+      ),
+    ).toEqual({ rules: [globalRule] });
+  });
+
   it('keeps local state and exposes a useful status when a server sync fails', async () => {
     saveLocalRules([privateRule]);
-    saveRulePreferences({ ...DEFAULT_RULE_PREFERENCES, storePrivateRules: true }, 'alice');
+    saveRulePreferences(
+      { storePrivateRules: true, useCommunityRules: false, contributeRules: false },
+      'alice',
+    );
     failPrivatePut = true;
 
     const { result } = renderHook(() => useRuleSync(signedIn, 'alice'));
@@ -248,6 +310,8 @@ describe('useRuleSync', () => {
     'syncs rules created before login for the $name combination',
     async ({ storePrivateRules, useCommunityRules, contributeRules }) => {
       saveLocalRules([globalRule, privateRule]);
+      saveRulePreferences({ storePrivateRules, useCommunityRules, contributeRules }, 'alice');
+      saveRulePreferences({ storePrivateRules, useCommunityRules, contributeRules }, 'bob');
       const view = renderHook(
         ({ auth }: { auth: AuthSnapshot }) =>
           useRuleSync(auth, auth.user?.sub ?? 'authenticated-user'),
@@ -260,58 +324,11 @@ describe('useRuleSync', () => {
       expect(calls.filter(({ url }) => url.includes('/api/'))).toHaveLength(0);
 
       view.rerender({ auth: signedIn });
-      act(() => {
-        view.result.current.updateRulePreferences({
-          storePrivateRules,
-          useCommunityRules,
-          contributeRules,
-        });
-      });
-
-      if (useCommunityRules) {
-        await waitFor(() =>
-          expect(
-            calls.some(
-              ({ url, init }) => url.includes('/api/rules?include_community=true') && !init?.method,
-            ),
-          ).toBe(true),
-        );
-      }
-
-      if (storePrivateRules) {
-        await waitFor(() =>
-          expect(
-            calls.some(({ url, init }) => url.endsWith('/api/rules') && init?.method === 'PUT'),
-          ).toBe(true),
-        );
-        const privateUpload = calls.find(
-          ({ url, init }) => url.endsWith('/api/rules') && init?.method === 'PUT',
-        );
-        expect(requestBody(privateUpload?.init)).toEqual({ rules: [globalRule, privateRule] });
-      }
-      if (contributeRules) {
-        await waitFor(() =>
-          expect(
-            calls.some(
-              ({ url, init }) => url.endsWith('/api/community/rules') && init?.method === 'POST',
-            ),
-          ).toBe(true),
-        );
-        const communityUpload = calls.find(
-          ({ url, init }) => url.endsWith('/api/community/rules') && init?.method === 'POST',
-        );
-        expect(requestBody(communityUpload?.init)).toEqual({ rules: [globalRule] });
-      }
-      if (!storePrivateRules && !contributeRules) {
-        expect(
-          calls.some(({ url, init }) => url.endsWith('/api/rules') && init?.method === 'PUT'),
-        ).toBe(false);
-        expect(
-          calls.some(
-            ({ url, init }) => url.endsWith('/api/community/rules') && init?.method === 'POST',
-          ),
-        ).toBe(false);
-      }
+      await expectConfiguredSync(
+        { storePrivateRules, useCommunityRules, contributeRules },
+        [globalRule, privateRule],
+        [globalRule],
+      );
 
       view.rerender({ auth: signedOut });
       expect(view.result.current.localRules).toEqual([globalRule, privateRule]);
@@ -326,6 +343,22 @@ describe('useRuleSync', () => {
       const imported = parseImportedRules(JSON.stringify(importedRuleSet));
       if (!imported) throw new Error('test fixture should be valid');
       saveLocalRules(imported);
+      saveRulePreferences(
+        {
+          storePrivateRules: preferences.storePrivateRules,
+          useCommunityRules: preferences.useCommunityRules,
+          contributeRules: preferences.contributeRules,
+        },
+        'alice',
+      );
+      saveRulePreferences(
+        {
+          storePrivateRules: preferences.storePrivateRules,
+          useCommunityRules: preferences.useCommunityRules,
+          contributeRules: preferences.contributeRules,
+        },
+        'bob',
+      );
       const view = renderHook(
         ({ auth }: { auth: AuthSnapshot }) =>
           useRuleSync(auth, auth.user?.sub ?? 'authenticated-user'),
@@ -336,7 +369,6 @@ describe('useRuleSync', () => {
         expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
       );
       view.rerender({ auth: signedIn });
-      act(() => view.result.current.updateRulePreferences(preferences));
       await expectConfiguredSync(preferences, imported, [globalRule]);
       expect(view.result.current.localRules).toEqual(imported);
     },
@@ -400,6 +432,22 @@ describe('useRuleSync', () => {
           ? [privateRule]
           : (parseImportedRules(JSON.stringify(importedRuleSet)) ?? []);
       saveLocalRules(rules);
+      saveRulePreferences(
+        {
+          storePrivateRules: preferences.storePrivateRules,
+          useCommunityRules: preferences.useCommunityRules,
+          contributeRules: preferences.contributeRules,
+        },
+        'alice',
+      );
+      saveRulePreferences(
+        {
+          storePrivateRules: preferences.storePrivateRules,
+          useCommunityRules: preferences.useCommunityRules,
+          contributeRules: preferences.contributeRules,
+        },
+        'bob',
+      );
       const view = renderHook(
         ({ auth }: { auth: AuthSnapshot }) =>
           useRuleSync(auth, auth.user?.sub ?? 'authenticated-user'),
@@ -411,7 +459,6 @@ describe('useRuleSync', () => {
       view.rerender({ auth: signedIn });
       view.rerender({ auth: signedOut });
       view.rerender({ auth: signedInAsBob });
-      act(() => view.result.current.updateRulePreferences(preferences));
       await expectConfiguredSync(preferences, rules, origin === 'imported' ? [globalRule] : []);
       expect(view.result.current.localRules).toEqual(rules);
     },

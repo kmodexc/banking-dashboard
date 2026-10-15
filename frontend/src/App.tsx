@@ -339,6 +339,10 @@ export function App(): ReactElement {
                 client={client}
                 onAddRule={addRule}
                 onAddRules={addRules}
+                userRules={userRules.map((rule) => ({
+                  ...rule,
+                  category: categoryName(userCategoryState, rule.category),
+                }))}
               />
             )}
             {tab === 'categories' && (

@@ -1,0 +1,8 @@
+﻿Kreditkartentransaktionen
+Kreditkarte;Kundennummer;Kartennummer;Karteninhaber
+Deutsche Bank Card Virtual;220 6433031;5354********5493;YIFEI PENG
+
+1.9.2026 - 30.9.2026
+Belegdatum;Eingangstag;Verwendungszweck;Fremdwährung;Betrag;Kurs;Betrag;Währung
+25.9.2026;28.9.2026;APPLE.COM/BILL, UNKNOWN CORK, IRL, IRL;EUR;-2,99;1,00000;-2,99;EUR
+3.9.2026;3.9.2026;Mol*WeWash GmbH, 80336 9800939274266, DEU;EUR;-8,4;1,00000;-8,4;EUR

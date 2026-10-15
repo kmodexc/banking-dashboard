@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import deutscheBankExample from '../../../data/example/deutsche_bank_example.csv?raw';
+import dkbExample from '../../../data/example/dkb_example.csv?raw';
 import { normalizeRows, parseAmount, parseCsv, parseDate, readTransactions } from './csv';
 
 describe('CSV parsing', () => {
@@ -50,6 +52,54 @@ describe('CSV parsing', () => {
     );
 
     expect(normalizeRows(rows)).toEqual([
+      {
+        id: '2026-09-25-5',
+        date: '2026-09-25',
+        period: '2026-09',
+        recipient: 'APPLE.COM/BILL',
+        purpose: 'APPLE.COM/BILL, UNKNOWN CORK, IRL, IRL',
+        type: 'Ausgang',
+        amount: -2.99,
+        category: 'unknown',
+      },
+      {
+        id: '2026-09-03-6',
+        date: '2026-09-03',
+        period: '2026-09',
+        recipient: 'Mol*WeWash GmbH',
+        purpose: 'Mol*WeWash GmbH, 80336 9800939274266, DEU',
+        type: 'Ausgang',
+        amount: -8.4,
+        category: 'unknown',
+      },
+    ]);
+  });
+
+  it('parses the checked-in DKB example export', async () => {
+    const transactions = await readTransactions(
+      new File([dkbExample], 'dkb_example.csv', { type: 'text/csv' }),
+    );
+
+    expect(transactions).toEqual([
+      {
+        id: '2026-09-30-4',
+        date: '2026-09-30',
+        period: '2026-09',
+        recipient: 'EDEKA',
+        purpose: 'VISA Debitkartenumsatz vom 29.09.2026',
+        type: 'Ausgang',
+        amount: -35.41,
+        category: 'unknown',
+      },
+    ]);
+  });
+
+  it('parses the checked-in Deutsche Bank example export', async () => {
+    const transactions = await readTransactions(
+      new File([deutscheBankExample], 'deutsche_bank_example.csv', { type: 'text/csv' }),
+    );
+
+    expect(transactions).toEqual([
       {
         id: '2026-09-25-5',
         date: '2026-09-25',

@@ -143,7 +143,7 @@ describe('categories page', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /Save a private copy/ }));
     expect(onPreferencesChange).toHaveBeenCalledWith({
       ...DEFAULT_RULE_PREFERENCES,
-      storePrivateRules: true,
+      storePrivateRules: false,
     });
     view.rerender(
       <Categories
@@ -185,8 +185,9 @@ describe('categories page', () => {
       />,
     );
 
-    const warning = screen.getByRole('alert');
+    const warning = screen.getByRole('status');
     expect(warning).toHaveTextContent('Warning: Could not sync rules: Request failed (503)');
-    expect(warning).toHaveAttribute('aria-live', 'assertive');
+    expect(warning).toHaveClass('rule-sync-status-error');
+    expect(warning).toHaveAttribute('role', 'status');
   });
 });

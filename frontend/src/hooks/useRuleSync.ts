@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   contributeRules,
   deleteContributedRules,
@@ -53,10 +53,14 @@ export function useRuleSync(
   const [serverRulesUserId, setServerRulesUserId] = useState<string | null>(null);
   const [communityRules, setCommunityRules] = useState<CategoryRule[]>([]);
   const [ruleSyncStatus, setRuleSyncStatus] = useState('');
+  const previousUserId = useRef<string | null>(null);
   const rulePreferences =
     rulePreferencesStore.userId === (auth.token ? categoryUserId : null)
       ? rulePreferencesStore.preferences
       : loadRulePreferences(auth.token ? categoryUserId : null);
+  const storePrivateRules = rulePreferences.storePrivateRules;
+  const useCommunityRules = rulePreferences.useCommunityRules;
+  const contributeRulesPreference = rulePreferences.contributeRules;
 
   const privateRulesForUser = useMemo(
     () =>
@@ -85,6 +89,45 @@ export function useRuleSync(
     ],
   );
 
+  const replaceRules = useCallback(
+    async (nextRules: CategoryRule[], preferences?: RulePreferences): Promise<void> => {
+      const activePreferences =
+        preferences ??
+        ({
+          storePrivateRules,
+          useCommunityRules,
+          contributeRules: contributeRulesPreference,
+        } satisfies RulePreferences);
+      if (!auth.token) {
+        setRuleSyncStatus('Sign in to sync rules on the server.');
+        return;
+      }
+      if (!activePreferences.storePrivateRules && !activePreferences.contributeRules) {
+        setRuleSyncStatus('Rules remain local to this browser.');
+        return;
+      }
+      const uniqueRules = deduplicateRules(nextRules);
+      setRuleSyncStatus('Syncing rules…');
+      try {
+        if (activePreferences.storePrivateRules) {
+          await replaceStoredRules(config, auth.token, uniqueRules);
+          setServerRulesUserId(categoryUserId);
+          setServerRules(uniqueRules);
+        }
+        if (activePreferences.contributeRules) {
+          const eligibleRules = uniqueRules.filter((rule) =>
+            (DEFAULT_CATEGORIES as readonly string[]).includes(rule.category),
+          );
+          await contributeRules(config, auth.token, eligibleRules);
+        }
+        setRuleSyncStatus('Rules synced. Custom-category rules stayed private.');
+      } catch (error: unknown) {
+        setRuleSyncStatus(`Could not sync rules: ${errorMessage(error)}`);
+      }
+    },
+    [auth.token, categoryUserId, storePrivateRules, useCommunityRules, contributeRulesPreference],
+  );
+
   useEffect(() => {
     void fetch('/default-rules.json')
       .then((response) =>
@@ -106,18 +149,24 @@ export function useRuleSync(
 
   useEffect(() => {
     let active = true;
-    if (!auth.token || (!rulePreferences.storePrivateRules && !rulePreferences.useCommunityRules)) {
+    const currentUserId = auth.token ? categoryUserId : null;
+    const isNewLogin = Boolean(currentUserId && previousUserId.current !== currentUserId);
+    previousUserId.current = currentUserId;
+    if (!auth.token || (!storePrivateRules && !useCommunityRules && !contributeRulesPreference)) {
       return () => {
         active = false;
       };
     }
-    void getStoredRules(config, auth.token, rulePreferences.useCommunityRules)
+    void getStoredRules(config, auth.token, useCommunityRules)
       .then((result) => {
         if (!active) return;
         setServerRulesUserId(categoryUserId);
-        setServerRules(rulePreferences.storePrivateRules ? result.private : []);
-        setCommunityRules(rulePreferences.useCommunityRules ? result.community : []);
+        setServerRules(storePrivateRules ? result.private : []);
+        setCommunityRules(useCommunityRules ? result.community : []);
         setRuleSyncStatus('Shared rules loaded.');
+        if (isNewLogin && localRules.length && (storePrivateRules || contributeRulesPreference)) {
+          void replaceRules(localRules);
+        }
       })
       .catch((error: unknown) => {
         if (active) setRuleSyncStatus(`Could not load shared rules: ${errorMessage(error)}`);
@@ -128,47 +177,18 @@ export function useRuleSync(
   }, [
     auth.token,
     categoryUserId,
-    rulePreferences.storePrivateRules,
-    rulePreferences.useCommunityRules,
+    storePrivateRules,
+    useCommunityRules,
+    contributeRulesPreference,
+    localRules,
+    replaceRules,
   ]);
-
-  async function replaceRules(
-    nextRules: CategoryRule[],
-    preferences = rulePreferences,
-  ): Promise<void> {
-    if (!auth.token) {
-      setRuleSyncStatus('Sign in to sync rules on the server.');
-      return;
-    }
-    if (!preferences.storePrivateRules && !preferences.contributeRules) {
-      setRuleSyncStatus('Rules remain local to this browser.');
-      return;
-    }
-    const uniqueRules = deduplicateRules(nextRules);
-    setRuleSyncStatus('Syncing rules…');
-    try {
-      if (preferences.storePrivateRules) {
-        await replaceStoredRules(config, auth.token, uniqueRules);
-        setServerRulesUserId(categoryUserId);
-        setServerRules(uniqueRules);
-      }
-      if (preferences.contributeRules) {
-        const eligibleRules = uniqueRules.filter((rule) =>
-          (DEFAULT_CATEGORIES as readonly string[]).includes(rule.category),
-        );
-        await contributeRules(config, auth.token, eligibleRules);
-      }
-      setRuleSyncStatus('Rules synced. Custom-category rules stayed private.');
-    } catch (error: unknown) {
-      setRuleSyncStatus(`Could not sync rules: ${errorMessage(error)}`);
-    }
-  }
 
   function saveRules(nextRules: CategoryRule[]): void {
     const uniqueRules = deduplicateRules(nextRules);
     setLocalRules(uniqueRules);
     saveLocalRules(uniqueRules);
-    if (rulePreferences.storePrivateRules || rulePreferences.contributeRules) {
+    if (auth.token && (rulePreferences.storePrivateRules || rulePreferences.contributeRules)) {
       void replaceRules(uniqueRules);
     }
   }
@@ -186,15 +206,15 @@ export function useRuleSync(
   }
 
   function addRule(rule: CategoryRule): void {
-    saveRules([rule, ...localRules]);
+    saveRules([rule, ...userRules]);
   }
 
   function addRules(newRules: ClassificationRule[]): void {
     saveRules([
       ...newRules.filter(
-        (rule) => !localRules.some((existing) => ruleKey(existing) === ruleKey(rule)),
+        (rule) => !userRules.some((existing) => ruleKey(existing) === ruleKey(rule)),
       ),
-      ...localRules,
+      ...userRules,
     ]);
   }
 

@@ -1,6 +1,6 @@
 # Personal Finance Dashboard
 
-A client-side React and TypeScript browser application for importing, categorizing, and analyzing bank transaction exports. The browser owns transaction data; the Rust API handles authenticated Gemini classification and optional opt-in rule synchronization. The parser supports DKB's semicolon-separated CSV format and Deutsche Bank credit-card CSV exports, and additional bank formats can be added without changing the dashboard.
+A client-side React and TypeScript browser application for importing, categorizing, and analyzing bank transaction exports. The browser owns transaction data; the Rust API handles authenticated Gemini classification and configurable rule synchronization. The parser supports DKB's semicolon-separated CSV format and Deutsche Bank credit-card CSV exports, and additional bank formats can be added without changing the dashboard.
 
 The app uses a configured Keycloak realm for access control. Gemini credentials are only configured on the API server and are never sent to the browser.
 
@@ -11,8 +11,8 @@ The app uses a configured Keycloak realm for access control. Gemini credentials 
   - **Categorize Unknown:** An interactive UI to label unrecognized transactions and update local rules.
   - **AI Auto-Categorization:** Uses Google Gemini to automatically propose and apply categorization rules based on transaction context.
   - **Categories:** Manage user-specific category changes and choose whether rules stay local, sync privately, or contribute eligible global-category rules to the community.
-- **Local rules:** The public build starts with no merchant-specific default rules; user-created rules stay in browser local storage by default.
-- **Optional shared rules:** Authenticated users may store their own rules privately on the server, use community rules, or contribute rules that use only global categories. Custom-category rules are never shared with the community.
+- **Local rules:** The public build starts with no merchant-specific default rules; rules remain local before sign-in and are automatically synchronized to the enabled destinations after sign-in.
+- **Shared rules:** Authenticated users default to storing their own rules privately, using community rules, and contributing rules that use only global categories. These options can be disabled. Custom-category rules are never shared with the community.
 - **AI categorization:** Sends only selected unknown transactions to the authenticated API.
 
 ## Prerequisites
@@ -142,4 +142,4 @@ npm run test:all
 
 ## Managing Categories
 
-Categorization rules are applied in the browser. The default is local-only storage. If a signed-in user enables private sync, the API stores that user's rules under their Keycloak subject. If they enable community sharing, PostgreSQL accepts only rules using the bundled global categories and stores deduplicated rules without transaction data. Private replacement and community changes are committed atomically, with database constraints protecting rule shape, category references, and duplicate keys. Users can delete their private server copy and remove their own community contributions from the Categories page.
+Categorization rules are applied in the browser. Before sign-in, rules are local-only. New signed-in users default to private storage, community-rule consumption, and community sharing; each option can be disabled. The API stores private rules under that user's Keycloak subject. PostgreSQL accepts only rules using the bundled global categories for community sharing and stores deduplicated rules without transaction data. Local rules that existed before sign-in are synchronized automatically after login when server options are enabled. Private replacement and community changes are committed atomically, with database constraints protecting rule shape, category references, and duplicate keys. Users can delete their private server copy and remove their own community contributions from the Categories page.

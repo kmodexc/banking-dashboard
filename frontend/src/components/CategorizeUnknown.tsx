@@ -11,6 +11,7 @@ import type {
 import { matchesRule, unknownTransactions } from '../data/rules';
 import { AiSuggestions } from './AiSuggestions';
 import { LocalRuleForm } from './LocalRuleForm';
+import { RuleSummaryList } from './RuleSummaryList';
 import { UnknownTransactionPicker } from './UnknownTransactionPicker';
 
 export function CategorizeUnknown({
@@ -20,6 +21,7 @@ export function CategorizeUnknown({
   client,
   onAddRule,
   onAddRules,
+  userRules,
 }: {
   transactions: Transaction[];
   rules: CategoryRule[];
@@ -27,6 +29,7 @@ export function CategorizeUnknown({
   client: OidcClient;
   onAddRule: (rule: CategoryRule) => void;
   onAddRules: (rules: ClassificationRule[]) => void;
+  userRules: CategoryRule[];
 }): ReactElement {
   const unknown = unknownTransactions(transactions);
   const [selectedId, setSelectedId] = useState(unknown[0]?.id ?? '');
@@ -72,6 +75,7 @@ export function CategorizeUnknown({
             client={client}
             onAddRules={onAddRules}
           />
+          <RuleSummaryList rules={userRules} />
         </article>
       </div>
     </section>

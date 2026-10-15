@@ -4,6 +4,14 @@ import { DEFAULT_RULE_PREFERENCES, loadRulePreferences, saveRulePreferences } fr
 describe('rule preferences', () => {
   beforeEach(() => localStorage.clear());
 
+  it('defaults authenticated users to private storage and both community actions', () => {
+    expect(DEFAULT_RULE_PREFERENCES).toEqual({
+      storePrivateRules: true,
+      useCommunityRules: true,
+      contributeRules: true,
+    });
+  });
+
   it('keeps preferences scoped to the authenticated user', () => {
     saveRulePreferences({ ...DEFAULT_RULE_PREFERENCES, useCommunityRules: true }, 'user-a');
 

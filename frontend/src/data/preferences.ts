@@ -4,9 +4,9 @@ import type { RulePreferences } from '../types';
 export const RULE_PREFERENCES_KEY = 'dkb-dashboard-rule-preferences-v1';
 
 export const DEFAULT_RULE_PREFERENCES: RulePreferences = {
-  storePrivateRules: false,
-  useCommunityRules: false,
-  contributeRules: false,
+  storePrivateRules: true,
+  useCommunityRules: true,
+  contributeRules: true,
 };
 
 function storageKey(userId: string | null): string | null {

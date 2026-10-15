@@ -15,6 +15,7 @@ REG-02,App.test.tsx imports a DKB amount with a thousands dot and no decimal cen
 REG-03,App.test.tsx shows an import error and the offending line,Frontend CSV/UI,frontend,high,passing
 REG-05,dashboard.spec.js imports a CSV and renders dashboard data in the browser,Frontend browser,frontend,high,passing
 REG-06,dashboard.spec.js keeps the setup notice visible alongside a CSV import error,Production browser UI,frontend,medium,implemented
+PARSER-EXAMPLES,csv.test.ts parses the checked-in DKB and Deutsche Bank example exports,CSV parser plus representative bank fixtures,frontend,high,implemented
 FRONTEND-STORAGE,session.test.ts,Session storage plus Zod schema,frontend,medium,implemented
 FRONTEND-RULE-SYNC,useRuleSync.test.tsx,React hook plus API client plus browser storage,frontend,high,implemented
 E2E-RULE-PERSISTENCE,production.spec.js,Built frontend plus Rust API plus PostgreSQL plus local OIDC,production-browser-e2e,high,implemented

@@ -27,9 +27,10 @@ export function RuleSharingSettings({
         <div>
           <h2>Where your rules are stored and shared</h2>
           <p className="muted">
-            Your transactions and local rules stay in this browser by default. The options below
-            control which rule data may be read from or written to the server. Enabling a server
-            option starts its action immediately; later rule changes are synced automatically.
+            Transactions always stay in this browser. Before sign-in, rules are local; after sign-in
+            new users default to private storage, community use, and eligible community sharing. The
+            options below control which rule data may be read from or written to the server. Changes
+            are synced automatically.
           </p>
         </div>
         <button
@@ -45,8 +46,8 @@ export function RuleSharingSettings({
       </div>
       <div className="rule-privacy-summary">
         <p>
-          <strong>Always local:</strong> transaction files, manual category overrides, and rules
-          stay in this browser unless you choose a server option and sync.
+          <strong>Always local:</strong> transaction files and manual category overrides stay in
+          this browser. Rules stay local before sign-in or when all server options are disabled.
         </p>
         <p>
           <strong>Login required:</strong> server options, syncing, importing/exporting
@@ -163,8 +164,8 @@ export function RuleSharingSettings({
       {ruleSyncStatus && (
         <p
           className={`rule-sync-status${syncFailed ? ' rule-sync-status-error' : ''}`}
-          role={syncFailed ? 'alert' : 'status'}
-          aria-live={syncFailed ? 'assertive' : 'polite'}
+          role="status"
+          aria-live="polite"
         >
           {syncFailed && <strong>Warning: </strong>}
           {ruleSyncStatus}
