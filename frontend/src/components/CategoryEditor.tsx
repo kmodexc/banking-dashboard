@@ -1,5 +1,4 @@
 import { useRef, useState, type ChangeEvent, type ReactElement } from 'react';
-import type { AuthSnapshot } from '../types';
 import {
   parseImportedCategoryState,
   serializeUserCategoryState,
@@ -8,7 +7,6 @@ import {
 } from '../data/categories';
 
 export function CategoryEditor({
-  auth,
   entries,
   state,
   onAdd,
@@ -16,7 +14,6 @@ export function CategoryEditor({
   onDelete,
   onImport,
 }: {
-  auth: AuthSnapshot;
   entries: CategoryEntry[];
   state: UserCategoryState;
   onAdd: (name: string) => void;
@@ -24,17 +21,12 @@ export function CategoryEditor({
   onDelete: (entry: CategoryEntry) => void;
   onImport: (next: UserCategoryState) => void;
 }): ReactElement {
-  const canEdit = Boolean(auth.token);
   const fileInput = useRef<HTMLInputElement>(null);
   const [newName, setNewName] = useState('');
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
 
   function exportCategories(): void {
-    if (!canEdit) {
-      setMessage('Sign in to export user-specific categories.');
-      return;
-    }
     const link = document.createElement('a');
     link.href = URL.createObjectURL(
       new Blob([serializeUserCategoryState(state)], { type: 'application/json' }),
@@ -49,10 +41,6 @@ export function CategoryEditor({
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = '';
     if (!file) return;
-    if (!canEdit) {
-      setMessage('Sign in to import user-specific categories.');
-      return;
-    }
     const imported = parseImportedCategoryState(await file.text());
     if (!imported) {
       setMessage('The category file is invalid.');
@@ -64,10 +52,6 @@ export function CategoryEditor({
 
   function addCategory(): void {
     const normalized = newName.trim();
-    if (!canEdit) {
-      setMessage('Sign in to add user-specific categories.');
-      return;
-    }
     if (normalized.length < 1 || normalized.length > 80) {
       setMessage('Category names must contain 1 to 80 characters.');
       return;
@@ -85,10 +69,6 @@ export function CategoryEditor({
 
   function renameCategory(entry: CategoryEntry): void {
     const name = (drafts[entry.key] ?? entry.name).trim();
-    if (!canEdit) {
-      setMessage('Sign in to rename user-specific categories.');
-      return;
-    }
     if (!name || name.length > 80) {
       setMessage('Category names must contain 1 to 80 characters.');
       return;
@@ -108,10 +88,6 @@ export function CategoryEditor({
   }
 
   function deleteCategory(entry: CategoryEntry): void {
-    if (!canEdit) {
-      setMessage('Sign in to delete user-specific categories.');
-      return;
-    }
     onDelete(entry);
     setMessage('Category deleted for this user.');
   }
@@ -127,42 +103,30 @@ export function CategoryEditor({
           </p>
         </div>
         <div className="category-actions">
-          <button
-            className="button secondary"
-            type="button"
-            disabled={!canEdit}
-            onClick={exportCategories}
-          >
+          <button className="button secondary" type="button" onClick={exportCategories}>
             Export categories
           </button>
-          <label className={`button secondary${!canEdit ? ' disabled' : ''}`}>
+          <label className="button secondary">
             Import categories
             <input
               ref={fileInput}
               className="file-picker-input"
               type="file"
               accept="application/json,.json"
-              disabled={!canEdit}
               onChange={(event) => void importCategories(event)}
             />
           </label>
         </div>
       </div>
-      {!canEdit && (
-        <p className="notice category-auth-notice">
-          Sign in to add, rename, delete, import, or export user-specific categories.
-        </p>
-      )}
       <div className="category-add-row">
         <input
           aria-label="New category name"
           maxLength={80}
           placeholder="New category name"
           value={newName}
-          disabled={!canEdit}
           onChange={(event) => setNewName(event.currentTarget.value)}
         />
-        <button className="button primary" type="button" disabled={!canEdit} onClick={addCategory}>
+        <button className="button primary" type="button" onClick={addCategory}>
           Add category
         </button>
       </div>
@@ -175,7 +139,6 @@ export function CategoryEditor({
                 aria-label={`${entry.name} category name`}
                 maxLength={80}
                 value={drafts[entry.key] ?? entry.name}
-                disabled={!canEdit}
                 onChange={(event) => {
                   const { value } = event.currentTarget;
                   setDrafts((current) => ({ ...current, [entry.key]: value }));
@@ -186,7 +149,6 @@ export function CategoryEditor({
               <button
                 className="button secondary"
                 type="button"
-                disabled={!canEdit}
                 onClick={() => renameCategory(entry)}
               >
                 Rename
@@ -194,7 +156,6 @@ export function CategoryEditor({
               <button
                 className="button secondary danger-button"
                 type="button"
-                disabled={!canEdit}
                 onClick={() => deleteCategory(entry)}
               >
                 Delete

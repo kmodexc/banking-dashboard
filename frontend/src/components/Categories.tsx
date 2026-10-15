@@ -34,7 +34,6 @@ export function Categories({
   return (
     <section id="categories-tab" className="tab-panel">
       <CategoryEditor
-        auth={auth}
         entries={entries}
         state={state}
         onAdd={onAdd}

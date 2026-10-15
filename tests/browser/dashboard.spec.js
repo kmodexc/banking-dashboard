@@ -71,7 +71,10 @@ test('imports a CSV and renders dashboard data in the browser', async ({ page })
   await expect(page.locator('#transaction-table')).toContainText('REWE Markt');
   await page.locator('[data-tab="categories"]').click();
   await expect(page.locator('#categories-tab')).toContainText('Categories');
-  await expect(page.locator('#categories-tab button', { hasText: 'Add category' })).toBeDisabled();
+  await expect(page.locator('#categories-tab button', { hasText: 'Add category' })).toBeEnabled();
+  await expect(page.locator('#categories-tab')).toContainText(
+    'Sign in above to enable private online storage',
+  );
 });
 
 test('filters income and expenses before categories, and category selection switches to expenses', async ({

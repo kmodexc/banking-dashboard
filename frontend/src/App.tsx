@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
 import { OidcClient } from './auth';
 import { getAppConfig } from './config';
 import { readTransactions } from './data/csv';
@@ -65,6 +65,19 @@ export function App(): ReactElement {
     userId: string | null;
     state: UserCategoryState;
   }>({ userId: null, state: loadUserCategoryState(null) });
+  const previousCategoryUserId = useRef<string | null>(null);
+  useEffect(() => {
+    const currentUserId = auth.token ? categoryUserId : null;
+    if (currentUserId && previousCategoryUserId.current !== currentUserId) {
+      const localState = loadUserCategoryState(null);
+      const accountState = loadUserCategoryState(currentUserId);
+      const merged = mergeCategoryStates(accountState, localState);
+      saveUserCategoryState(merged, currentUserId);
+      // Keep categories created before login when switching to account-scoped storage.
+      setCategoryStateStore({ userId: currentUserId, state: merged });
+    }
+    previousCategoryUserId.current = currentUserId;
+  }, [auth.token, categoryUserId]);
   const userCategoryState =
     categoryStateStore.userId === (auth.token ? categoryUserId : null)
       ? categoryStateStore.state
@@ -196,10 +209,10 @@ export function App(): ReactElement {
   }
 
   function updateUserCategories(next: UserCategoryState): void {
-    if (!auth.token) return;
-    saveUserCategoryState(next, categoryUserId);
-    setCategoryStateStore({ userId: categoryUserId, state: next });
-    if (rulePreferences.storePrivateRules) void replaceRules(userRules, next);
+    const storageUserId = auth.token ? categoryUserId : null;
+    saveUserCategoryState(next, storageUserId);
+    setCategoryStateStore({ userId: storageUserId, state: next });
+    if (auth.token && rulePreferences.storePrivateRules) void replaceRules(userRules, next);
   }
 
   function addUserCategory(name: string): void {
@@ -207,7 +220,6 @@ export function App(): ReactElement {
   }
 
   function renameUserCategory(entry: CategoryEntry, name: string): void {
-    if (!auth.token) return;
     const categories = userCategoryState.categories.map((category) =>
       category.id === entry.id
         ? { ...category, name, aliases: [...new Set([...category.aliases, category.name])] }
@@ -220,7 +232,6 @@ export function App(): ReactElement {
   }
 
   function deleteUserCategory(entry: CategoryEntry): void {
-    if (!auth.token) return;
     updateUserCategories({
       ...userCategoryState,
       categories: userCategoryState.categories.filter((category) => category.id !== entry.id),

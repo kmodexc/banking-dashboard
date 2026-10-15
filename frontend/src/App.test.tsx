@@ -185,7 +185,7 @@ describe('dashboard UI', () => {
     expect(screen.getByText('1 rows')).toBeInTheDocument();
   });
 
-  it('shows the categories page with user changes locked while signed out', async () => {
+  it('stores categories locally while signed out', async () => {
     render(<App />);
     const input = screen.getByLabelText<HTMLInputElement>('Choose CSV export');
     fireEvent.change(input, {
@@ -194,10 +194,12 @@ describe('dashboard UI', () => {
     await screen.findByText('1 transactions loaded');
     fireEvent.click(screen.getByRole('button', { name: 'Categories' }));
 
-    expect(screen.getByRole('button', { name: 'Add category' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Export categories' })).toBeDisabled();
-    expect(
-      screen.getByText(/Sign in to add, rename, delete, import, or export/),
-    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('New category name'), {
+      target: { value: 'groceries' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add category' }));
+    expect(screen.getByLabelText('groceries category name')).toBeInTheDocument();
+    expect(localStorage.getItem('dkb-dashboard-user-categories-v1')).toContain('groceries');
+    expect(screen.getByText(/Sign in above to enable private online storage/)).toBeInTheDocument();
   });
 });

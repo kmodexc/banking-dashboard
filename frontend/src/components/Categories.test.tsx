@@ -32,19 +32,41 @@ function props(auth: AuthSnapshot, overrides: Record<string, unknown> = {}) {
 }
 
 describe('categories page', () => {
-  it('keeps category changes and import/export disabled while signed out', () => {
-    render(<Categories {...props(signedOut)} />);
+  it('allows local category changes and import/export while signed out', async () => {
+    const onAdd = vi.fn();
+    const onRename = vi.fn();
+    const onDelete = vi.fn();
+    const onImport = vi.fn();
+    render(<Categories {...props(signedOut, { onAdd, onRename, onDelete, onImport })} />);
 
-    expect(screen.getByRole('button', { name: 'Add category' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Export categories' })).toBeDisabled();
-    expect(screen.getByLabelText('Import categories')).toBeDisabled();
-    expect(screen.getByLabelText('groceries category name')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add category' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Export categories' })).toBeEnabled();
+    expect(screen.getByLabelText('Import categories')).toBeEnabled();
+    expect(screen.getByLabelText('groceries category name')).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('New category name'), { target: { value: 'health' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add category' }));
+    expect(onAdd).toHaveBeenCalledWith('health');
+    fireEvent.change(screen.getByLabelText('groceries category name'), {
+      target: { value: 'Food' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
+    expect(onRename).toHaveBeenCalledWith(entries[0], 'Food');
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(onDelete).toHaveBeenCalledWith(entries[0]);
+    fireEvent.change(screen.getByLabelText('Import categories'), {
+      target: {
+        files: [
+          new File([JSON.stringify({ categories: [], deletedIds: [] })], 'categories.json', {
+            type: 'application/json',
+          }),
+        ],
+      },
+    });
+    await waitFor(() => expect(onImport).toHaveBeenCalledWith({ categories: [], deletedIds: [] }));
     expect(
       screen.getByRole('checkbox', { name: /Save my categories and rules privately/ }),
     ).toBeDisabled();
-    expect(
-      screen.getByText(/Sign in to add, rename, delete, import, or export/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Sign in above to enable private online storage/)).toBeInTheDocument();
   });
 
   it('allows signed-in users to add and rename categories', () => {

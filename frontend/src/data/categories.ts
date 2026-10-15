@@ -119,7 +119,7 @@ export function parseUserCategoryState(value: string | null): UserCategoryState 
 }
 
 function scopedStorageKey(userId: string | null): string | null {
-  return userId ? `${USER_CATEGORIES_KEY}:${encodeURIComponent(userId)}` : null;
+  return userId ? `${USER_CATEGORIES_KEY}:${encodeURIComponent(userId)}` : USER_CATEGORIES_KEY;
 }
 
 export function loadUserCategoryState(userId: string | null): UserCategoryState {
