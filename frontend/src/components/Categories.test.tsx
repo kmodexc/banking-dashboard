@@ -1,19 +1,23 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Categories } from './Categories';
-import { categoryEntries, EMPTY_USER_CATEGORY_STATE } from '../data/categories';
+import { categoryEntries, type UserCategoryState } from '../data/categories';
 import { DEFAULT_RULE_PREFERENCES } from '../data/preferences';
 import type { AuthSnapshot } from '../types';
 
 const signedOut: AuthSnapshot = { token: null, user: null, setupError: null };
 const signedIn: AuthSnapshot = { token: 'token', user: { name: 'Test user' }, setupError: null };
-const entries = categoryEntries(EMPTY_USER_CATEGORY_STATE);
+const testState: UserCategoryState = {
+  categories: [{ id: 'category-groceries', name: 'groceries', aliases: [] }],
+  deletedIds: [],
+};
+const entries = categoryEntries(testState);
 
 function props(auth: AuthSnapshot, overrides: Record<string, unknown> = {}) {
   return {
     auth,
     entries,
-    state: EMPTY_USER_CATEGORY_STATE,
+    state: testState,
     onAdd: vi.fn(),
     onRename: vi.fn(),
     onDelete: vi.fn(),

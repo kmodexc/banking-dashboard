@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
-export const DEFAULT_CATEGORIES = [
+// Kept only for the legacy community-contribution compatibility path. New users
+// never receive these as categories; personal categories start empty.
+export const LEGACY_COMMUNITY_CATEGORIES = [
   'groceries',
   'restaurant',
   'paypal',

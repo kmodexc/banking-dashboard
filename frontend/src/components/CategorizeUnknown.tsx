@@ -1,6 +1,5 @@
 import { useState, type ReactElement } from 'react';
 import { OidcClient } from '../auth';
-import { DEFAULT_CATEGORIES } from '../types';
 import type {
   AuthSnapshot,
   CategoryRule,
@@ -22,7 +21,7 @@ export function CategorizeUnknown({
   onAddRule,
   onAddRules,
   userRules,
-  categories: availableCategories = [...DEFAULT_CATEGORIES],
+  categories: availableCategories = [],
 }: {
   transactions: Transaction[];
   rules: CategoryRule[];

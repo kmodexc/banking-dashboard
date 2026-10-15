@@ -135,7 +135,7 @@ describe('dashboard UI', () => {
     });
     await screen.findByText('1 transactions loaded');
     fireEvent.click(screen.getByRole('button', { name: 'Categorize unknown' }));
-    fireEvent.click(screen.getByRole('radio', { name: 'items' }));
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'items' } });
     fireEvent.submit(screen.getByRole('button', { name: 'Save rule' }).closest('form')!);
     await waitFor(() => expect(screen.getByText('0 rows')).toBeInTheDocument());
     expect(fetch).not.toHaveBeenCalled();
@@ -175,7 +175,7 @@ describe('dashboard UI', () => {
     });
     await screen.findByText('2 transactions loaded');
     fireEvent.click(screen.getByRole('button', { name: 'Categorize unknown' }));
-    fireEvent.click(screen.getByRole('radio', { name: 'items' }));
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'items' } });
     fireEvent.submit(screen.getByRole('button', { name: 'Save rule' }).closest('form')!);
 
     await waitFor(() => {

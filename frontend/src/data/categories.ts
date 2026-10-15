@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { DEFAULT_CATEGORIES } from '../types';
 
 export const USER_CATEGORIES_KEY = 'dkb-dashboard-user-categories-v1';
 
@@ -42,10 +41,6 @@ export interface CategoryEntry extends UserCategory {
   source: 'user';
 }
 
-function defaultCategoryId(name: string): string {
-  return `default:${name}`;
-}
-
 function legacyCategoryId(name: string): string {
   return `legacy:${encodeURIComponent(name.trim().toLocaleLowerCase())}`;
 }
@@ -56,19 +51,20 @@ function newCategoryId(): string {
 }
 
 export const EMPTY_USER_CATEGORY_STATE: UserCategoryState = {
-  categories: DEFAULT_CATEGORIES.map((name) => ({
-    id: defaultCategoryId(name),
-    name,
-    aliases: [],
-  })),
+  categories: [],
   deletedIds: [],
 };
 
 function normalizeState(value: z.infer<typeof UserCategoryStateSchema>): UserCategoryState {
-  const deletedIds = [...new Set(value.deletedIds)];
+  const deletedIds = [...new Set(value.deletedIds)].filter((id) => !id.startsWith('default:'));
   const seen = new Set<string>();
   const categories = value.categories.flatMap((category) => {
-    if (seen.has(category.id) || deletedIds.includes(category.id)) return [];
+    if (
+      category.id.startsWith('default:') ||
+      seen.has(category.id) ||
+      deletedIds.includes(category.id)
+    )
+      return [];
     seen.add(category.id);
     const name = category.name.trim();
     return [
@@ -102,8 +98,8 @@ function migrateLegacyState(
       aliases: normalized === originalName ? [] : [originalName],
     });
   };
-  DEFAULT_CATEGORIES.forEach((name) =>
-    add(defaultCategoryId(name), name, value.renamed[name] ?? name),
+  Object.entries(value.renamed).forEach(([originalName, renamedName]) =>
+    add(legacyCategoryId(originalName), originalName, renamedName),
   );
   value.added.forEach((name) => add(legacyCategoryId(name), name, value.renamed[name] ?? name));
   return normalizeState({ categories, deletedIds });

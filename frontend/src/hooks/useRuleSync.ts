@@ -14,7 +14,7 @@ import {
 } from '../data/preferences';
 import { deduplicateRules, loadLocalRules, ruleKey, saveLocalRules } from '../data/rules';
 import type { UserCategoryState } from '../data/categories';
-import { DEFAULT_CATEGORIES } from '../types';
+import { LEGACY_COMMUNITY_CATEGORIES } from '../types';
 import type { AuthSnapshot, CategoryRule, ClassificationRule, RulePreferences } from '../types';
 
 const config = getAppConfig();
@@ -125,7 +125,7 @@ export function useRuleSync(
         }
         if (activePreferences.contributeRules) {
           const eligibleRules = uniqueRules.filter((rule) =>
-            (DEFAULT_CATEGORIES as readonly string[]).includes(rule.category),
+            (LEGACY_COMMUNITY_CATEGORIES as readonly string[]).includes(rule.category),
           );
           await contributeRules(config, auth.token, eligibleRules);
         }

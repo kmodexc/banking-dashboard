@@ -62,13 +62,31 @@ describe('user category state', () => {
       '{"renamed":{"groceries":"Food"},"deleted":["mix"],"added":["health"]}',
     );
     expect(
-      imported?.categories.find((category) => category.id === 'default:groceries'),
+      imported?.categories.find((category) => category.id === 'legacy:groceries'),
     ).toMatchObject({ name: 'Food', aliases: ['groceries'] });
-    expect(imported?.deletedIds).toContain('default:mix');
+    expect(imported?.categories.some((category) => category.name === 'mix')).toBe(false);
     expect(imported?.categories.some((category) => category.name === 'health')).toBe(true);
     expect(
       parseImportedCategoryState(serializeUserCategoryState(EMPTY_USER_CATEGORY_STATE)),
     ).toEqual(EMPTY_USER_CATEGORY_STATE);
     expect(parseImportedCategoryState('{"invalid":true}')).toBeNull();
+  });
+
+  it('starts empty and removes previously persisted default categories', () => {
+    expect(EMPTY_USER_CATEGORY_STATE).toEqual({ categories: [], deletedIds: [] });
+    expect(
+      parseImportedCategoryState(
+        JSON.stringify({
+          categories: [
+            { id: 'default:groceries', name: 'groceries', aliases: [] },
+            { id: 'personal', name: 'Personal', aliases: [] },
+          ],
+          deletedIds: ['default:mix'],
+        }),
+      ),
+    ).toEqual({
+      categories: [{ id: 'personal', name: 'Personal', aliases: [] }],
+      deletedIds: [],
+    });
   });
 });
