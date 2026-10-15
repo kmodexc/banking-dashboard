@@ -1,15 +1,14 @@
-import type { Transaction } from '../types';
-
 export function parseCsv(text: string): string[][] {
+  const source = text.replace(/^\uFEFF/, '');
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
   let quoted = false;
 
-  for (let index = 0; index < text.length; index += 1) {
-    const character = text[index];
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
     if (character === '"') {
-      if (quoted && text[index + 1] === '"') {
+      if (quoted && source[index + 1] === '"') {
         field += '"';
         index += 1;
       } else {
@@ -19,7 +18,7 @@ export function parseCsv(text: string): string[][] {
       row.push(field);
       field = '';
     } else if ((character === '\n' || character === '\r') && !quoted) {
-      if (character === '\r' && text[index + 1] === '\n') index += 1;
+      if (character === '\r' && source[index + 1] === '\n') index += 1;
       row.push(field);
       if (row.some((value) => value.trim())) rows.push(row);
       row = [];
@@ -64,37 +63,4 @@ export function parseAmount(value: string | undefined): number {
   }
   const amount = Number(clean);
   return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : Number.NaN;
-}
-
-export function normalizeRows(rows: string[][]): Transaction[] {
-  return rows.flatMap((columns, index): Transaction[] => {
-    const date = parseDate(columns[0]);
-    if (!date || columns.length < 12) return [];
-
-    const isLegacyFormat = columns.length === 12;
-    const amount = parseAmount(isLegacyFormat ? columns[8] : (columns[15] ?? columns[16]));
-    if (!Number.isFinite(amount)) return [];
-
-    const recipient = isLegacyFormat ? columns[4] : columns[3];
-    const purpose = isLegacyFormat ? columns[5] : columns[4];
-    const type = isLegacyFormat ? columns[6] : amount < 0 ? 'Ausgang' : 'Eingang';
-    return [
-      {
-        id: `${date}-${index}`,
-        date,
-        period: date.slice(0, 7),
-        recipient: recipient ?? '',
-        purpose: purpose ?? '',
-        type: type ?? (amount < 0 ? 'Ausgang' : 'Eingang'),
-        amount,
-        category: 'unknown',
-      },
-    ];
-  });
-}
-
-export async function readTransactions(file: File): Promise<Transaction[]> {
-  const transactions = normalizeRows(parseCsv(await file.text()));
-  if (!transactions.length) throw new Error('No valid transaction rows were found');
-  return transactions;
 }

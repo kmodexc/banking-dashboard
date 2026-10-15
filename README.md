@@ -1,6 +1,6 @@
 # Personal Finance Dashboard
 
-A client-side React and TypeScript browser application for importing, categorizing, and analyzing bank transaction exports. The browser owns transaction data; the Rust API handles authenticated Gemini classification and optional opt-in rule synchronization. The current parser supports DKB's semicolon-separated CSV format, and additional bank formats can be added without changing the dashboard.
+A client-side React and TypeScript browser application for importing, categorizing, and analyzing bank transaction exports. The browser owns transaction data; the Rust API handles authenticated Gemini classification and optional opt-in rule synchronization. The parser supports DKB's semicolon-separated CSV format and Deutsche Bank credit-card CSV exports, and additional bank formats can be added without changing the dashboard.
 
 The app uses a configured Keycloak realm for access control. Gemini credentials are only configured on the API server and are never sent to the browser.
 
@@ -51,7 +51,7 @@ The app uses a configured Keycloak realm for access control. Gemini credentials 
    ```
 
 5. **Access the Dashboard:**
-   Open your browser and navigate to `http://localhost:8080` (or the port configured with `APP_PORT`), sign in, and choose a supported bank CSV export.
+   Open your browser and navigate to `http://localhost:8080` (or the port configured with `APP_PORT`), sign in, and choose a supported DKB or Deutsche Bank CSV export.
 
 ## Deploy behind Apache2
 

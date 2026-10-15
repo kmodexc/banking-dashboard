@@ -2,7 +2,7 @@
 
 ## Architecture
 
-- `frontend/` is a browser-only React and TypeScript application. It parses supported bank CSV files, currently the DKB semicolon-separated format, applies categorization rules, calculates totals, and renders the dashboard.
+- `frontend/` is a browser-only React and TypeScript application. It parses supported bank CSV files, currently DKB semicolon-separated exports and Deutsche Bank credit-card exports, applies categorization rules, calculates totals, and renders the dashboard.
 - `src/` contains the Rust API, which serves the frontend, validates Keycloak bearer tokens, and calls Gemini for classification suggestions.
 - Gemini credentials must remain server-side. Do not add them to frontend JavaScript or `config.js`.
 - PostgreSQL stores opt-in rules through the Rust SQLx migration set in `db/rust-migrations/`. The old transaction/view SQL in `db/migrations/` remains reference material only.

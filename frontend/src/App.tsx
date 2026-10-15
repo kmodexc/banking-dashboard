@@ -273,7 +273,7 @@ export function App(): ReactElement {
               onChange={(event) => void handleFile(event)}
             />
             <p className="muted small">
-              Current parser: DKB semicolon-separated CSV. Additional bank formats can be added.
+              Supported formats: DKB and Deutsche Bank credit-card CSV exports.
             </p>
           </section>
         ) : (
