@@ -92,8 +92,8 @@ export function RuleSharingSettings({
           <span>
             <strong>Use rules from the community</strong>
             <small id="community-use-help">
-              Enabling this downloads accepted community rules immediately and uses them after your
-              local and private rules. Your rules are not uploaded by this option.
+              Enabling this downloads accepted community and global rules immediately and uses them
+              after your local and private rules. Your rules are not uploaded by this option.
             </small>
           </span>
         </label>
@@ -134,8 +134,8 @@ export function RuleSharingSettings({
             eligible global-category rules.
           </li>
           <li>
-            Community rules are downloaded separately when “Use rules from the community” is enabled
-            and are applied after your own rules.
+            Community and global rules are downloaded together when “Use rules from the community”
+            is enabled and are applied after your own rules.
           </li>
         </ol>
         <p className="muted small">

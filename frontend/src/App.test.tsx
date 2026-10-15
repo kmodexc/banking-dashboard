@@ -138,7 +138,7 @@ describe('dashboard UI', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'items' }));
     fireEvent.submit(screen.getByRole('button', { name: 'Save rule' }).closest('form')!);
     await waitFor(() => expect(screen.getByText('0 rows')).toBeInTheDocument());
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).not.toHaveBeenCalled();
     expect(localStorage.getItem('dkb-dashboard-rules-v1')).toContain('"category":"items"');
   });
 

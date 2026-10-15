@@ -54,6 +54,7 @@ export function useRuleSync(
   const [communityRules, setCommunityRules] = useState<CategoryRule[]>([]);
   const [ruleSyncStatus, setRuleSyncStatus] = useState('');
   const previousUserId = useRef<string | null>(null);
+  const loadedGlobalRulesKey = useRef<string | null>(null);
   const rulePreferences =
     rulePreferencesStore.userId === (auth.token ? categoryUserId : null)
       ? rulePreferencesStore.preferences
@@ -129,6 +130,11 @@ export function useRuleSync(
   );
 
   useEffect(() => {
+    if (!auth.token || !useCommunityRules) return;
+    const globalRulesKey = `${auth.token}:${categoryUserId}`;
+    if (loadedGlobalRulesKey.current === globalRulesKey) return;
+    loadedGlobalRulesKey.current = globalRulesKey;
+
     void fetch('/default-rules.json')
       .then((response) =>
         response.ok
@@ -145,7 +151,7 @@ export function useRuleSync(
         );
       })
       .catch(() => setDefaultRules([]));
-  }, []);
+  }, [auth.token, categoryUserId, useCommunityRules]);
 
   useEffect(() => {
     let active = true;

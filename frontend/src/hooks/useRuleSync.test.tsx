@@ -137,15 +137,20 @@ describe('useRuleSync', () => {
   let calls: Array<{ url: string; init: RequestInit | undefined }>;
   let fetchMock: ReturnType<typeof vi.fn>;
   let failPrivatePut = false;
+  let defaultRulesFetches = 0;
 
   beforeEach(() => {
     localStorage.clear();
     calls = [];
     failPrivatePut = false;
+    defaultRulesFetches = 0;
     fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
       const url = requestUrl(input);
       calls.push({ url, init });
-      if (url.endsWith('/default-rules.json')) return Promise.resolve(response([]));
+      if (url.endsWith('/default-rules.json')) {
+        defaultRulesFetches += 1;
+        return Promise.resolve(response([globalRule]));
+      }
       if (url.includes('/api/rules') && (init?.method ?? 'GET') === 'GET') {
         return Promise.resolve(response({ private: [], community: [] }));
       }
@@ -220,9 +225,7 @@ describe('useRuleSync', () => {
     saveRulePreferences(localOnlyPreferences, 'alice');
     const { result } = renderHook(() => useRuleSync(signedIn, 'alice'));
 
-    await waitFor(() =>
-      expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
-    );
+    expect(defaultRulesFetches).toBe(0);
     expect(calls.filter(({ url }) => url.includes('/api/'))).toHaveLength(0);
 
     act(() => {
@@ -250,6 +253,29 @@ describe('useRuleSync', () => {
     expect(requestBody(communityUpload?.init)).toEqual({ rules: [globalRule] });
   });
 
+  it('loads global rules from the server only with an authenticated community import', async () => {
+    saveRulePreferences(localOnlyPreferences, 'alice');
+    const localOnly = renderHook(() => useRuleSync(signedIn, 'alice'));
+    expect(defaultRulesFetches).toBe(0);
+    localOnly.unmount();
+
+    saveRulePreferences(
+      { storePrivateRules: false, useCommunityRules: true, contributeRules: false },
+      'alice',
+    );
+    const communityEnabled = renderHook(() => useRuleSync(signedIn, 'alice'));
+    await waitFor(() => expect(defaultRulesFetches).toBe(1));
+    await waitFor(() =>
+      expect(
+        calls.some(
+          ({ url, init }) => url.includes('/api/rules?include_community=true') && !init?.method,
+        ),
+      ).toBe(true),
+    );
+    expect(communityEnabled.result.current.defaultRules).toEqual([globalRule]);
+    communityEnabled.unmount();
+  });
+
   it('automatically syncs pre-login rules on login with all default destinations enabled', async () => {
     saveLocalRules([globalRule, privateRule]);
     const view = renderHook(
@@ -258,9 +284,6 @@ describe('useRuleSync', () => {
       { initialProps: { auth: signedOut } },
     );
 
-    await waitFor(() =>
-      expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
-    );
     view.rerender({ auth: signedIn });
 
     await waitFor(() =>
@@ -341,9 +364,6 @@ describe('useRuleSync', () => {
         { initialProps: { auth: signedOut } },
       );
 
-      await waitFor(() =>
-        expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
-      );
       expect(calls.filter(({ url }) => url.includes('/api/'))).toHaveLength(0);
 
       view.rerender({ auth: signedIn });
@@ -388,9 +408,6 @@ describe('useRuleSync', () => {
         { initialProps: { auth: signedOut } },
       );
 
-      await waitFor(() =>
-        expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
-      );
       view.rerender({ auth: signedIn });
       await expectConfiguredSync(preferences, imported, [globalRule]);
       expect(view.result.current.localRules).toEqual(imported);
@@ -404,9 +421,6 @@ describe('useRuleSync', () => {
         ({ auth }: { auth: AuthSnapshot }) =>
           useRuleSync(auth, auth.user?.sub ?? 'authenticated-user'),
         { initialProps: { auth: signedOut } },
-      );
-      await waitFor(() =>
-        expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
       );
       view.rerender({ auth: signedIn });
       act(() => view.result.current.updateRulePreferences(preferences));
@@ -426,9 +440,6 @@ describe('useRuleSync', () => {
         ({ auth }: { auth: AuthSnapshot }) =>
           useRuleSync(auth, auth.user?.sub ?? 'authenticated-user'),
         { initialProps: { auth: signedOut } },
-      );
-      await waitFor(() =>
-        expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
       );
       view.rerender({ auth: signedIn });
       act(() => view.result.current.updateRulePreferences(preferences));
@@ -459,9 +470,6 @@ describe('useRuleSync', () => {
         { initialProps: { auth: signedOut } },
       );
 
-      await waitFor(() =>
-        expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
-      );
       if (timing === 'after login') {
         view.rerender({ auth: signedIn });
         await expectConfiguredSync(preferences, originalRules, [globalRule]);
@@ -497,9 +505,6 @@ describe('useRuleSync', () => {
         { initialProps: { auth: signedOut } },
       );
 
-      await waitFor(() =>
-        expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
-      );
       if (timing === 'after login') {
         view.rerender({ auth: signedIn });
         await expectConfiguredSync(preferences, originalRules, [globalRule]);
@@ -529,9 +534,6 @@ describe('useRuleSync', () => {
         { initialProps: { auth: signedOut } },
       );
 
-      await waitFor(() =>
-        expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
-      );
       view.rerender({ auth: signedIn });
       if (preferences.useCommunityRules) {
         await waitFor(() =>
@@ -606,9 +608,6 @@ describe('useRuleSync', () => {
         ({ auth }: { auth: AuthSnapshot }) =>
           useRuleSync(auth, auth.user?.sub ?? 'authenticated-user'),
         { initialProps: { auth: signedOut } },
-      );
-      await waitFor(() =>
-        expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
       );
       view.rerender({ auth: signedIn });
       view.rerender({ auth: signedOut });
