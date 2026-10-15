@@ -31,5 +31,8 @@ describe('categorize unknown', () => {
     );
 
     expect(screen.getByText('No rules added yet.')).toBeInTheDocument();
+    const heading = screen.getByRole('heading', { name: 'Recently added rules' });
+    expect(heading.closest('.content-grid')).toBeNull();
+    expect(heading.closest('.recent-rules')).toHaveClass('panel');
   });
 });

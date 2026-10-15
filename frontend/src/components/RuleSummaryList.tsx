@@ -3,7 +3,7 @@ import type { CategoryRule } from '../types';
 
 export function RuleSummaryList({ rules }: { rules: CategoryRule[] }): ReactElement {
   return (
-    <section className="recent-rules" aria-labelledby="recent-rules-heading">
+    <section className="panel recent-rules" aria-labelledby="recent-rules-heading">
       <h2 id="recent-rules-heading">Recently added rules</h2>
       {rules.length ? (
         <ol className="recent-rule-list" aria-label="Recently added rules">

@@ -67,23 +67,27 @@ export function TransactionDetailsModal({
                 <dd>{transaction.id}</dd>
               </div>
             </dl>
-            <div className="category-editor">
-              <span className="category-editor-label">Category</span>
-              <div className="category-buttons" role="radiogroup" aria-label="Choose category">
-                {categories.map((category) => (
-                  <label className="category-choice" key={category}>
-                    <input
-                      type="radio"
-                      name={`category-${transaction.id}`}
-                      value={category}
-                      checked={transaction.category === category}
-                      onChange={() => onCategoryChange(transaction.id, category)}
-                    />
-                    <span>{category}</span>
-                  </label>
-                ))}
+            {transaction.type === 'Ausgang' ? (
+              <div className="category-editor">
+                <span className="category-editor-label">Category</span>
+                <div className="category-buttons" role="radiogroup" aria-label="Choose category">
+                  {categories.map((category) => (
+                    <label className="category-choice" key={category}>
+                      <input
+                        type="radio"
+                        name={`category-${transaction.id}`}
+                        value={category}
+                        checked={transaction.category === category}
+                        onChange={() => onCategoryChange(transaction.id, category)}
+                      />
+                      <span>{category}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <p className="muted">Income is not categorized.</p>
+            )}
           </div>
           <SearchPreview recipient={transaction.recipient} purpose={transaction.purpose} />
         </div>

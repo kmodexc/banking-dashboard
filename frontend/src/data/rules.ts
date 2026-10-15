@@ -76,6 +76,7 @@ export function saveCategoryOverrides(overrides: Record<string, string>): void {
 
 export function applyRules(transactions: Transaction[], rules: CategoryRule[]): Transaction[] {
   return transactions.map((transaction) => {
+    if (transaction.type === 'Eingang') return { ...transaction, category: 'unknown' };
     const categoryRule = rules.find((rule) => matchesRule(transaction, rule));
     return { ...transaction, category: categoryRule?.category ?? 'unknown' };
   });
@@ -98,7 +99,10 @@ export function applyCategoryOverrides(
 ): Transaction[] {
   return transactions.map((transaction) => ({
     ...transaction,
-    category: overrides[transaction.id] ?? transaction.category,
+    category:
+      transaction.type === 'Eingang'
+        ? 'unknown'
+        : (overrides[transaction.id] ?? transaction.category),
   }));
 }
 

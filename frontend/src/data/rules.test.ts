@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  applyCategoryOverrides,
   applyRules,
   deduplicateRules,
   loadLocalRules,
@@ -38,6 +39,19 @@ describe('categorization rules', () => {
     const result = applyRules([transaction], rules);
     expect(result[0]?.category).toBe('items');
     expect(transaction.category).toBe('unknown');
+  });
+
+  it('keeps income uncategorized even when a rule matches it', () => {
+    const rules: CategoryRule[] = [{ keyword: 'salary', category: 'items', column: 'recipient' }];
+    const income = { ...transaction, type: 'Eingang', recipient: 'SALARY' };
+
+    expect(applyRules([income], rules)[0]?.category).toBe('unknown');
+  });
+
+  it('does not apply category overrides to income', () => {
+    const income = { ...transaction, type: 'Eingang', category: 'unknown' };
+
+    expect(applyCategoryOverrides([income], { [income.id]: 'items' })[0]?.category).toBe('unknown');
   });
 
   it('returns only unknown outgoing transactions', () => {

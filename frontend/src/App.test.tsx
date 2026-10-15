@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { TRANSACTIONS_SESSION_KEY } from './data/session';
@@ -12,6 +12,12 @@ const csvWithNextUnknown = [
   'Buchungstag;Wertstellung;Buchungstext;Kontonummer;Empfänger;Zweck;Art;Saldo;Umsatz;A;B;C',
   '03.01.2026;03.01.2026;Kartenzahlung;;NEXT SHOP;Sonstiges;Ausgang;;-12,00;;;',
   '02.01.2026;02.01.2026;Kartenzahlung;;UNKNOWN SHOP;Sonstiges;Ausgang;;-8,00;;;',
+].join('\n');
+
+const csvWithIncome = [
+  'Buchungstag;Wertstellung;Buchungstext;Kontonummer;Empfänger;Zweck;Art;Saldo;Umsatz;A;B;C',
+  '02.01.2026;02.01.2026;Gehalt;;SALARY;Monthly salary;Eingang;;1000,00;;;',
+  '01.01.2026;01.01.2026;Kartenzahlung;;UNKNOWN SHOP;Sonstiges;Ausgang;;-8,00;;;',
 ].join('\n');
 
 describe('dashboard UI', () => {
@@ -69,6 +75,33 @@ describe('dashboard UI', () => {
     await waitFor(() => expect(sessionStorage.getItem(TRANSACTIONS_SESSION_KEY)).not.toBeNull());
     const stored: unknown = JSON.parse(sessionStorage.getItem(TRANSACTIONS_SESSION_KEY)!);
     expect(stored).toEqual([expect.objectContaining({ amount: -1480 })]);
+  });
+
+  it('shows income only in the top aggregate, not in categories or the transaction list', async () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText<HTMLInputElement>('Choose CSV export'), {
+      target: { files: [new File([csvWithIncome], 'income.csv', { type: 'text/csv' })] },
+    });
+
+    expect(await screen.findByText('2 transactions loaded')).toBeInTheDocument();
+    expect(screen.queryByText('SALARY')).not.toBeInTheDocument();
+    expect(screen.getByText('€1,000.00')).toBeInTheDocument();
+    expect(screen.getByText('€992.00')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Income', pressed: false }));
+    expect(screen.getByText('SALARY')).toBeInTheDocument();
+    expect(screen.queryByText('UNKNOWN SHOP')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'unknown' }));
+    expect(screen.getByRole('button', { name: 'Expenses', pressed: true })).toBeInTheDocument();
+    expect(screen.queryByText('SALARY')).not.toBeInTheDocument();
+    const metrics = within(document.querySelector('#metrics')!);
+    expect(metrics.getAllByText('€1,000.00')).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole('button', { name: 'All transactions' }));
+    expect(screen.getByText('SALARY')).toBeInTheDocument();
+    expect(screen.getByText('Income', { selector: '.type-badge' })).toBeInTheDocument();
+    expect(screen.getByText('2 rows · click a row for details')).toBeInTheDocument();
   });
 
   it('restores imported transactions after a page reload', async () => {

@@ -7,6 +7,12 @@ const csv = [
   '02.01.2026;02.01.2026;Kartenzahlung;;UNKNOWN SHOP;Sonstiges;Ausgang;;-8,00;;;',
 ].join('\n');
 
+const csvWithIncome = [
+  'Buchungstag;Wertstellung;Buchungstext;Kontonummer;Empfänger;Zweck;Art;Saldo;Umsatz;A;B;C',
+  '02.01.2026;02.01.2026;Gehalt;;SALARY;Monthly salary;Eingang;;1000,00;;;',
+  '01.01.2026;01.01.2026;Kartenzahlung;;UNKNOWN SHOP;Sonstiges;Ausgang;;-8,00;;;',
+].join('\n');
+
 async function configurePage(page, { authenticated = false, navigate = true } = {}) {
   await page.route('**/config.js', (route) =>
     route.fulfill({
@@ -66,6 +72,28 @@ test('imports a CSV and renders dashboard data in the browser', async ({ page })
   await page.locator('[data-tab="categories"]').click();
   await expect(page.locator('#categories-tab')).toContainText('Categories');
   await expect(page.locator('#categories-tab button', { hasText: 'Add category' })).toBeDisabled();
+});
+
+test('filters income and expenses before categories, and category selection switches to expenses', async ({
+  page,
+}) => {
+  await configurePage(page);
+  await page.locator('#csv-input').setInputFiles({
+    name: 'income.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csvWithIncome),
+  });
+
+  await page.getByRole('button', { name: 'Income', exact: true }).click();
+  await expect(page.locator('#transaction-table')).toContainText('SALARY');
+  await expect(page.locator('#transaction-table')).not.toContainText('UNKNOWN SHOP');
+
+  await page.getByRole('checkbox', { name: 'unknown' }).click();
+  await expect(page.getByRole('button', { name: 'Expenses', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.locator('#transaction-table')).not.toContainText('SALARY');
 });
 
 test('keeps the setup notice visible alongside a CSV import error', async ({ page }) => {

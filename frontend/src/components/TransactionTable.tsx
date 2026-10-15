@@ -5,9 +5,11 @@ import { formatDate, money, sortRows, type SortKey } from '../utils/format';
 export function TransactionTable({
   rows,
   onSelect,
+  maxRows,
 }: {
   rows: Transaction[];
   onSelect: (transactionId: string) => void;
+  maxRows?: number;
 }): ReactElement {
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -21,6 +23,8 @@ export function TransactionTable({
       setSortDirection(nextKey === 'date' ? 'desc' : 'asc');
     }
   }
+
+  const visibleRows = maxRows === undefined ? sortedRows : sortedRows.slice(0, maxRows);
 
   function renderSortHeader(label: string, key: SortKey): ReactElement {
     const active = sortKey === key;
@@ -60,7 +64,7 @@ export function TransactionTable({
             </tr>
           </thead>
           <tbody>
-            {sortedRows.slice(0, 500).map((row) => (
+            {visibleRows.map((row) => (
               <tr
                 key={row.id}
                 className="transaction-row"
@@ -73,7 +77,7 @@ export function TransactionTable({
                 <td>{formatDate(row.date)}</td>
                 <td className="recipient-cell">
                   <span>{row.recipient}</span>
-                  <span className="category-badge">{row.category}</span>
+                  {row.type === 'Ausgang' && <span className="category-badge">{row.category}</span>}
                 </td>
                 <td className="amount">{money(row.amount)}</td>
                 <td>

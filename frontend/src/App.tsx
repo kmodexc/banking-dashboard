@@ -20,6 +20,9 @@ import {
   type UserCategoryState,
 } from './data/categories';
 import { CategorizeUnknown } from './components/CategorizeUnknown';
+import { AllTransactions } from './components/AllTransactions';
+import { AppTabs } from './components/AppTabs';
+import type { AppTab } from './components/appTabs';
 import { AuthControls, FilePicker } from './components/AppChrome';
 import { Categories } from './components/Categories';
 import { Dashboard } from './components/Dashboard';
@@ -88,7 +91,7 @@ export function App(): ReactElement {
     loadSessionTransactions(),
   );
   const [period, setPeriod] = useState('');
-  const [tab, setTab] = useState<'dashboard' | 'unknown' | 'categories'>('dashboard');
+  const [tab, setTab] = useState<AppTab>('dashboard');
   const [loadError, setLoadError] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[] | null>(null);
   const ruleSyncError = ruleSyncStatus.startsWith('Could not ');
@@ -125,7 +128,9 @@ export function App(): ReactElement {
       [
         ...new Set([
           ...categoryEntriesForUser.map((entry) => entry.name),
-          ...transactions.map((transaction) => transaction.category),
+          ...transactions
+            .filter((transaction) => transaction.type === 'Ausgang')
+            .map((transaction) => transaction.category),
         ]),
       ].sort(),
     [categoryEntriesForUser, transactions],
@@ -304,22 +309,7 @@ export function App(): ReactElement {
                 {transactions.length} transactions loaded
               </span>
             </div>
-            <nav className="tabs" aria-label="Dashboard sections">
-              {(['dashboard', 'unknown', 'categories'] as const).map((value) => (
-                <button
-                  className={`tab${tab === value ? ' active' : ''}`}
-                  data-tab={value}
-                  key={value}
-                  onClick={() => setTab(value)}
-                >
-                  {value === 'dashboard'
-                    ? 'Dashboard'
-                    : value === 'unknown'
-                      ? 'Categorize unknown'
-                      : 'Categories'}
-                </button>
-              ))}
-            </nav>
+            <AppTabs activeTab={tab} onChange={setTab} />
             {tab === 'dashboard' && (
               <Dashboard
                 transactions={transactions}
@@ -371,6 +361,13 @@ export function App(): ReactElement {
                   onDelete={deleteUserRule}
                 />
               </>
+            )}
+            {tab === 'all' && (
+              <AllTransactions
+                transactions={transactions}
+                categories={categories}
+                onCategoryChange={changeCategory}
+              />
             )}
           </section>
         )}

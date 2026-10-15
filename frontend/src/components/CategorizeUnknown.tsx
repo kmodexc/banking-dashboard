@@ -75,9 +75,9 @@ export function CategorizeUnknown({
             client={client}
             onAddRules={onAddRules}
           />
-          <RuleSummaryList rules={userRules} />
         </article>
       </div>
+      <RuleSummaryList rules={userRules} />
     </section>
   );
 }
