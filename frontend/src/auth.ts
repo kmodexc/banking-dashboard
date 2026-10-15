@@ -9,6 +9,7 @@ const DiscoverySchema = z
   })
   .passthrough();
 type Discovery = z.infer<typeof DiscoverySchema>;
+type Navigation = Pick<Location, 'assign' | 'reload'>;
 
 const TokenResponseSchema = z
   .object({
@@ -17,6 +18,16 @@ const TokenResponseSchema = z
     expires_in: z.number().positive().optional(),
   })
   .passthrough();
+
+const PersistedTokenSchema = z
+  .object({
+    access_token: z.string().min(1),
+    refresh_token: z.string().min(1).nullable(),
+    expires_at: z.number().finite().positive(),
+  })
+  .strict();
+
+export const OIDC_SESSION_STORAGE_KEY = 'dkb-dashboard-oidc-session-v1';
 
 const UserClaimsSchema = z
   .object({
@@ -64,6 +75,7 @@ function assertResponse(response: Response): Response {
 
 export class OidcClient {
   private readonly config: AppConfig;
+  private readonly navigation: Navigation;
   private discovery: Discovery | null = null;
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
@@ -71,8 +83,9 @@ export class OidcClient {
   private user: UserClaims | null = null;
   private initialization: Promise<AuthSnapshot> | null = null;
 
-  public constructor(config: AppConfig) {
+  public constructor(config: AppConfig, navigation: Navigation = window.location) {
     this.config = config;
+    this.navigation = navigation;
   }
 
   public get snapshot(): AuthSnapshot {
@@ -99,11 +112,19 @@ export class OidcClient {
         `${this.config.keycloakIssuer.replace(/\/$/, '')}/.well-known/openid-configuration`,
       );
       this.discovery = DiscoverySchema.parse((await assertResponse(response).json()) as unknown);
+      this.restoreTokens();
       const params = new URLSearchParams(location.search);
       if (params.has('error'))
         throw new Error(params.get('error_description') || params.get('error') || 'Sign-in failed');
       const code = params.get('code');
       if (code) await this.exchangeCode(code, params.get('state'));
+      else if (this.accessToken && this.refreshToken && Date.now() >= this.expiresAt - 30_000) {
+        try {
+          await this.token();
+        } catch {
+          // A stale persisted session is treated as signed out.
+        }
+      }
       return this.snapshot;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -141,8 +162,8 @@ export class OidcClient {
       client_id: this.config.keycloakClientId,
     });
     this.clearTokens();
-    if (endpoint) location.assign(`${endpoint}?${params}`);
-    else location.reload();
+    if (endpoint) this.navigation.assign(`${endpoint}?${params}`);
+    else this.navigation.reload();
   }
 
   public async token(): Promise<string> {
@@ -200,6 +221,41 @@ export class OidcClient {
     this.refreshToken = tokens.refresh_token ?? null;
     this.expiresAt = Date.now() + (tokens.expires_in ?? 60) * 1000;
     this.user = decodeJwt(this.accessToken);
+    this.persistTokens();
+  }
+
+  private restoreTokens(): void {
+    try {
+      const value = sessionStorage.getItem(OIDC_SESSION_STORAGE_KEY);
+      if (!value) return;
+      const tokens = PersistedTokenSchema.safeParse(JSON.parse(value) as unknown);
+      if (!tokens.success || (tokens.data.expires_at <= Date.now() && !tokens.data.refresh_token)) {
+        this.clearTokens();
+        return;
+      }
+      this.accessToken = tokens.data.access_token;
+      this.refreshToken = tokens.data.refresh_token;
+      this.expiresAt = tokens.data.expires_at;
+      this.user = decodeJwt(this.accessToken);
+    } catch {
+      this.clearTokens();
+    }
+  }
+
+  private persistTokens(): void {
+    if (!this.accessToken) return;
+    try {
+      sessionStorage.setItem(
+        OIDC_SESSION_STORAGE_KEY,
+        JSON.stringify({
+          access_token: this.accessToken,
+          refresh_token: this.refreshToken,
+          expires_at: this.expiresAt,
+        }),
+      );
+    } catch {
+      // Session persistence is best effort; the in-memory session remains usable.
+    }
   }
 
   private clearTokens(): void {
@@ -207,6 +263,11 @@ export class OidcClient {
     this.refreshToken = null;
     this.expiresAt = 0;
     this.user = null;
+    try {
+      sessionStorage.removeItem(OIDC_SESSION_STORAGE_KEY);
+    } catch {
+      // Storage may be unavailable; the in-memory session is still cleared.
+    }
   }
 
   private redirectUri(): string {

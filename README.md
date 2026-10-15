@@ -87,9 +87,13 @@ export GEMINI_API_KEY='<server-side-key>'
 cargo run --release
 ```
 
-The browser keeps access and refresh tokens in memory. The API validates the bearer token against the configured Keycloak issuer before calling Gemini. The official Keycloak JavaScript guidance recommends this in-memory token approach and refreshing the access token before API calls.
+The browser keeps access and refresh tokens in this app origin's `sessionStorage`, so an accidental reload preserves the session while closing the tab clears it. The API validates the bearer token against the configured Keycloak issuer before calling Gemini. Use a dedicated origin for the dashboard; same-origin scripts can access browser storage.
 
 The API performs authorization independently of browser state. It verifies the token signature through Keycloak's JWKS, issuer, expiry, issued-at time, subject, authorized party, and configured audience before allowing classification or rule synchronization. Configure `ALLOWED_ORIGINS` and `ALLOWED_HOSTS` with exact production values; wildcard values are rejected. The Compose service runs as a non-root user with a read-only filesystem and no added capabilities.
+
+For the production-bundle browser smoke test, run `npm run test:e2e:production`. It builds the frontend, starts disposable PostgreSQL, serves the built bundle through the Rust API, and uses a local signed OIDC stub. The test does not intercept application API requests; it removes the local rule after saving and verifies that the authenticated rule is restored from PostgreSQL after reload.
+
+For the container deployment smoke test, run `npm run test:deployment`. It builds the exact API image, runs it with PostgreSQL and a local OIDC service under the production-style non-root/read-only settings, checks health, headers, host validation, authenticated persistence, and restart recovery.
 
 At startup, the Rust service runs the checked-in SQLx migrations against PostgreSQL before serving requests. Existing rule tables are compatible with the previous store, and a mounted legacy `dkb-rules.json` is imported once when `LEGACY_RULE_STORE_PATH` points to it. Rule replacements and community changes execute inside database transactions.
 
@@ -100,6 +104,7 @@ Run Rust checks with:
 ```bash
 cargo fmt --all -- --check
 cargo check --locked
+cargo build --locked
 cargo test --locked
 cargo clippy --locked --all-targets -- -D warnings
 ```
@@ -112,6 +117,13 @@ npx playwright install chromium
 npm run test:components
 ```
 
+Run the PostgreSQL-backed store integration suite with Docker Compose:
+
+```bash
+npm run test:integration
+npm run test:deployment
+```
+
 Run the frontend checks with:
 
 ```bash
@@ -120,6 +132,12 @@ npm run lint
 npm run format:check
 npm run build
 npm run test:unit
+```
+
+Run the complete locally available application suite, including the Rust build, with:
+
+```bash
+npm run test:all
 ```
 
 ## Managing Categories

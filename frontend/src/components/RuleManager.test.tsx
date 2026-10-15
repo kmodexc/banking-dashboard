@@ -102,4 +102,36 @@ describe('rule manager', () => {
     });
     expect(screen.getByText('Rules imported.')).toBeInTheDocument();
   });
+
+  it('exports the editable rules without shared read-only rules', async () => {
+    const createObjectURL = vi.fn((blob: Blob) =>
+      blob instanceof Blob ? 'blob:rules' : 'invalid',
+    );
+    const revokeObjectURL = vi.fn();
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+    render(
+      <RuleManager
+        rules={rules}
+        categories={[{ value: 'groceries', label: 'groceries' }]}
+        rulesToExport={[userRule]}
+        onImport={vi.fn()}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export rules' }));
+
+    expect(createObjectURL).toHaveBeenCalledOnce();
+    const exported = createObjectURL.mock.calls[0]?.[0] as Blob;
+    await expect(exported.text()).resolves.toContain('SPC.CAFE');
+    await expect(exported.text()).resolves.not.toContain('EDEKA');
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:rules');
+    expect(screen.getByText('Rules exported.')).toBeInTheDocument();
+    click.mockRestore();
+    vi.unstubAllGlobals();
+  });
 });

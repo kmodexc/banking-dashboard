@@ -65,6 +65,7 @@ Reload only after the configuration test succeeds. The example redirects HTTP to
 ```bash
 docker compose ps
 curl --fail http://127.0.0.1:8080/healthz
+curl --fail http://127.0.0.1:8080/readyz
 curl -I http://dashboard.example.com/
 curl --fail -D - https://dashboard.example.com/healthz
 ```

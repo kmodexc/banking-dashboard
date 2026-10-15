@@ -45,6 +45,7 @@ pub fn router(state: AppState) -> Router {
         .fallback(ServeFile::new(state.config.frontend_dir.join("index.html")));
     Router::new()
         .route("/healthz", get(handlers::healthz))
+        .route("/readyz", get(handlers::readyz))
         .route("/config.js", get(handlers::config_js))
         .route("/api/classify", post(handlers::classify))
         .route(

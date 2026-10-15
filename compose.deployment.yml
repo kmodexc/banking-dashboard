@@ -1,0 +1,73 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: integration
+      POSTGRES_USER: integration
+      POSTGRES_PASSWORD: integration
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U integration -d integration']
+      interval: 1s
+      timeout: 2s
+      retries: 30
+
+  oidc:
+    image: node:22-alpine
+    working_dir: /app
+    command: ['node', '/app/oidc-stub.mjs']
+    environment:
+      OIDC_HOST: 0.0.0.0
+      OIDC_PORT: 8081
+      OIDC_ISSUER: http://oidc:8081
+      OIDC_CLIENT_ID: deployment-client
+    volumes:
+      - ./tests/e2e/oidc-stub.mjs:/app/oidc-stub.mjs:ro
+    ports:
+      - '127.0.0.1:${DEPLOYMENT_OIDC_PORT:-18083}:8081'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:8081/.well-known/openid-configuration')
+          .then(() => process.exit(0)).catch(() => process.exit(1))
+      interval: 1s
+      timeout: 2s
+      retries: 30
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      oidc:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://integration:integration@db:5432/integration
+      KEYCLOAK_ISSUER: http://oidc:8081
+      KEYCLOAK_CLIENT_ID: deployment-client
+      KEYCLOAK_AUDIENCE: ''
+      ALLOWED_ORIGINS: http://localhost:${DEPLOYMENT_APP_PORT:-18082}
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      PUBLIC_API_BASE_URL: ''
+      GEMINI_API_KEY: ''
+      LEGACY_RULE_STORE_PATH: ''
+      PORT: 8080
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    ports:
+      - '127.0.0.1:${DEPLOYMENT_APP_PORT:-18082}:8080'
+    healthcheck:
+      test: ['CMD', 'curl', '--fail', '--silent', 'http://127.0.0.1:8080/readyz']
+      interval: 2s
+      timeout: 3s
+      retries: 30

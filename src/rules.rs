@@ -20,6 +20,18 @@ struct DbRule {
 }
 
 impl RuleStore {
+    /// Construct a store around an already-provisioned pool.
+    ///
+    /// Integration tests use SQLx's real PostgreSQL test pool while
+    /// production continues to use `connect`, which owns connection and
+    /// migration setup.
+    pub fn from_pool(pool: PgPool) -> Self {
+        Self {
+            pool,
+            legacy_path: None,
+        }
+    }
+
     pub async fn connect(
         database_url: &str,
         legacy_path: Option<std::path::PathBuf>,
@@ -59,6 +71,10 @@ impl RuleStore {
         .fetch_all(&self.pool)
         .await?;
         Ok(rows.into_iter().map(Into::into).collect())
+    }
+
+    pub async fn ping(&self) -> Result<(), sqlx::Error> {
+        sqlx::query("SELECT 1").execute(&self.pool).await.map(|_| ())
     }
 
     pub async fn replace_private(&self, subject: &str, rules: &[Rule]) -> Result<(), sqlx::Error> {
@@ -299,61 +315,5 @@ impl From<DbRule> for Rule {
             rule_column: value.rule_column,
             confidence: value.confidence,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // SQLx creates an isolated database and applies the real schema for this test.
-    // Run with DATABASE_URL pointing to a test PostgreSQL server:
-    // cargo test --locked replace_private_upserts_case_insensitive_duplicates -- --ignored
-    #[sqlx::test(migrations = "./db/rust-migrations")]
-    #[ignore = "requires a PostgreSQL test server with database creation privileges"]
-    async fn replace_private_upserts_case_insensitive_duplicates(pool: PgPool) {
-        let store = RuleStore {
-            pool,
-            legacy_path: None,
-        };
-        let first = Rule {
-            keyword: "Market".into(),
-            category: "Groceries".into(),
-            rule_column: "recipient".into(),
-            confidence: Some(0.5),
-        };
-        let duplicate = Rule {
-            keyword: "MARKET".into(),
-            category: "groceries".into(),
-            confidence: Some(0.9),
-            ..first.clone()
-        };
-        store
-            .replace_private("other-user", std::slice::from_ref(&first))
-            .await
-            .unwrap();
-        store
-            .replace_private("test-user", &[first.clone(), duplicate])
-            .await
-            .unwrap();
-        let saved = store.private("test-user").await.unwrap();
-        assert_eq!(saved.len(), 1);
-        assert_eq!(saved[0].keyword, "Market");
-        assert_eq!(saved[0].confidence, Some(0.9));
-        let other = store.private("other-user").await.unwrap();
-        assert_eq!(other.len(), 1);
-        assert_eq!(other[0].confidence, Some(0.5));
-
-        store
-            .replace_private("test-user", std::slice::from_ref(&first))
-            .await
-            .unwrap();
-        assert_eq!(
-            store.private("test-user").await.unwrap()[0].confidence,
-            Some(0.5)
-        );
-        store.replace_private("test-user", &[]).await.unwrap();
-        assert!(store.private("test-user").await.unwrap().is_empty());
-        assert_eq!(store.private("other-user").await.unwrap().len(), 1);
     }
 }

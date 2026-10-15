@@ -5,56 +5,74 @@ on:
   pull_request:
 
 jobs:
-  test:
+  frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-
-      - name: Check Rust formatting
-        run: cargo fmt --all -- --check
-
-      - name: Check Rust code
-        run: cargo check --locked
-
-      - name: Run Rust tests
-        run: cargo test --locked
-
-      - name: Run Rust clippy
-        run: cargo clippy --locked --all-targets -- -D warnings
-
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: 22
           cache: npm
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=moderate
+      - run: npm run check:types
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run build
+      - run: npm run test:unit
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:components
 
-      - name: Install frontend test dependencies
-        run: npm ci
+  rust-store-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: integration
+          POSTGRES_USER: integration
+          POSTGRES_PASSWORD: integration
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U integration -d integration"
+          --health-interval 1s
+          --health-timeout 2s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          components: rustfmt, clippy
+      - run: cargo check --locked
+      - run: cargo build --locked
+      - run: cargo fmt --all -- --check
+      - run: cargo test --locked --test store_integration --test api_integration -- --test-threads=1
+        env:
+          DATABASE_URL: postgres://integration:integration@127.0.0.1:5432/integration
+      - run: cargo test --locked --lib
+      - run: cargo clippy --locked --all-targets -- -D warnings
 
-      - name: Audit frontend dependencies
-        run: npm audit --omit=dev --audit-level=moderate
+  production-browser-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@1.99.0
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:production
 
-      - name: Check frontend types
-        run: npm run check:types
-
-      - name: Lint frontend
-        run: npm run lint
-
-      - name: Check formatting
-        run: npm run format:check
-
-      - name: Build frontend
-        run: npm run build
-
-      - name: Run frontend unit tests
-        run: npm run test:unit
-
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
-
-      - name: Run browser component tests
-        run: npm run test:components
+  container-deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:deployment

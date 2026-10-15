@@ -91,6 +91,7 @@ export function App(): ReactElement {
   const [tab, setTab] = useState<'dashboard' | 'unknown' | 'categories'>('dashboard');
   const [loadError, setLoadError] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[] | null>(null);
+  const ruleSyncError = ruleSyncStatus.startsWith('Could not ');
   useEffect(() => {
     saveSessionTransactions(rawTransactions);
   }, [rawTransactions]);
@@ -267,6 +268,12 @@ export function App(): ReactElement {
             style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
           >
             {loadError}
+          </section>
+        )}
+        {ruleSyncError && (
+          <section id="rule-sync-error" className="panel notice" role="alert" aria-live="assertive">
+            <strong>Rule synchronization warning:</strong> {ruleSyncStatus} Your local rules are
+            still available. Open Categories and use “Sync selected rules now” to retry.
           </section>
         )}
         {!transactions.length ? (

@@ -21,6 +21,20 @@ pub async fn healthz() -> impl IntoResponse {
     (StatusCode::OK, Json(serde_json::json!({"status": "ok"})))
 }
 
+pub async fn readyz(State(state): State<AppState>) -> Response {
+    match state.store.ping().await {
+        Ok(()) => (StatusCode::OK, Json(serde_json::json!({"status": "ready"}))).into_response(),
+        Err(error) => {
+            tracing::error!(error = ?error, "readiness database check failed");
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(serde_json::json!({"status": "unavailable"})),
+            )
+                .into_response()
+        }
+    }
+}
+
 pub async fn config_js(State(state): State<AppState>) -> Response {
     let config = ConfigResponse {
         keycloak_issuer: state.config.keycloak_issuer.clone(),
@@ -53,6 +67,7 @@ pub async fn classify(
     let response = classifier::classify(
         &state.client,
         state.config.gemini_api_key.as_deref(),
+        &state.config.gemini_api_base_url,
         &state.config.gemini_model,
         &request,
         state.config.max_transactions,

@@ -21,51 +21,8 @@ async function configurePage(page, { authenticated = false, navigate = true } = 
   if (navigate) await page.goto('/');
 }
 
-test('imports a CSV and renders dashboard data in the browser', async ({ page }) => {
-  await configurePage(page);
-  await page.locator('#csv-input').setInputFiles({
-    name: 'transactions.csv',
-    mimeType: 'text/csv',
-    buffer: Buffer.from(csv),
-  });
-
-  await expect(page.locator('#app-panel')).toBeVisible();
-  await expect(page.locator('#data-status')).toHaveText('2 transactions loaded');
-  await expect(page.locator('#transaction-table')).toContainText('REWE Markt');
-  await page.locator('[data-tab="categories"]').click();
-  await expect(page.locator('#categories-tab')).toContainText('Categories');
-  await expect(page.locator('#categories-tab button', { hasText: 'Add category' })).toBeDisabled();
-});
-
-test('stores a manual categorization rule locally without an API request', async ({ page }) => {
-  await configurePage(page);
-  let apiCalls = 0;
-  await page.route('**/api/**', (route) => {
-    apiCalls += 1;
-    return route.abort();
-  });
-  await page.locator('#csv-input').setInputFiles({
-    name: 'transactions.csv',
-    mimeType: 'text/csv',
-    buffer: Buffer.from(csv),
-  });
-  await page.locator('[data-tab="unknown"]').click();
-  await page.locator('#rule-keyword').fill('UNKNOWN SHOP');
-  await page.locator('#rule-category').fill('items');
-  await page.locator('#rule-form button[type=submit]').click();
-
-  await expect(page.locator('#unknown-count')).toHaveText('0 rows');
-  expect(apiCalls).toBe(0);
-  await expect
-    .poll(() => page.evaluate(() => localStorage.getItem('dkb-dashboard-rules-v1')))
-    .toContain('UNKNOWN SHOP');
-});
-
-test('sends only selected classification fields when AI classification is requested', async ({
-  page,
-}) => {
+async function configureKeycloak(page) {
   await configurePage(page, { authenticated: true, navigate: false });
-
   await page.route('http://keycloak.test/realms/kmode/.well-known/openid-configuration', (route) =>
     route.fulfill({
       contentType: 'application/json',
@@ -93,6 +50,111 @@ test('sends only selected classification fields when AI classification is reques
       }),
     }),
   );
+}
+
+test('imports a CSV and renders dashboard data in the browser', async ({ page }) => {
+  await configurePage(page);
+  await page.locator('#csv-input').setInputFiles({
+    name: 'transactions.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csv),
+  });
+
+  await expect(page.locator('#app-panel')).toBeVisible();
+  await expect(page.locator('#data-status')).toHaveText('2 transactions loaded');
+  await expect(page.locator('#transaction-table')).toContainText('REWE Markt');
+  await page.locator('[data-tab="categories"]').click();
+  await expect(page.locator('#categories-tab')).toContainText('Categories');
+  await expect(page.locator('#categories-tab button', { hasText: 'Add category' })).toBeDisabled();
+});
+
+test('keeps the setup notice visible alongside a CSV import error', async ({ page }) => {
+  await configurePage(page, { authenticated: true, navigate: false });
+  await page.route('http://keycloak.test/realms/kmode/.well-known/openid-configuration', (route) =>
+    route.fulfill({ status: 503, body: 'identity provider unavailable' }),
+  );
+  await page.goto('/');
+
+  await expect(page.locator('#setup-panel')).toBeVisible();
+  await page.locator('#csv-input').setInputFiles({
+    name: 'broken.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(
+      [
+        'Buchungstag;Wertstellung;Buchungstext;Kontonummer;Empfänger;Zweck;Art;Saldo;Umsatz;A;B;C',
+        '02.01.2026;02.01.2026;Kartenzahlung;;UNKNOWN SHOP;Sonstiges;Ausgang;;;',
+      ].join('\n'),
+    ),
+  });
+
+  await expect(page.locator('#setup-panel')).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Line 2:');
+});
+
+test('shows a clear warning when automatic rule synchronization fails', async ({ page }) => {
+  await configureKeycloak(page);
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'dkb-dashboard-rule-preferences-v1:test',
+      JSON.stringify({ storePrivateRules: true, useCommunityRules: false, contributeRules: false }),
+    );
+  });
+  await page.route('**/api/rules**', async (route) => {
+    if (route.request().method() === 'PUT') {
+      return route.fulfill({ status: 503, body: 'rule sync unavailable' });
+    }
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ private: [], community: [] }),
+    });
+  });
+
+  await page.goto('/');
+  await page.locator('#login-button').click();
+  await expect(page.locator('#logout-button')).toBeVisible();
+  await page.locator('#csv-input').setInputFiles({
+    name: 'transactions.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csv),
+  });
+  await page.locator('[data-tab="unknown"]').click();
+  await page.locator('#rule-keyword').fill('UNKNOWN SHOP');
+  await page.locator('#rule-category').fill('items');
+  await page.locator('#rule-form button[type=submit]').click();
+
+  await expect(page.locator('#rule-sync-error')).toContainText('Rule synchronization warning:');
+  await expect(page.locator('#rule-sync-error')).toContainText('Could not sync rules');
+  await expect(page.getByRole('alert')).toHaveAttribute('aria-live', 'assertive');
+});
+
+test('stores a manual categorization rule locally without an API request', async ({ page }) => {
+  await configurePage(page);
+  let apiCalls = 0;
+  await page.route('**/api/**', (route) => {
+    apiCalls += 1;
+    return route.abort();
+  });
+  await page.locator('#csv-input').setInputFiles({
+    name: 'transactions.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csv),
+  });
+  await page.locator('[data-tab="unknown"]').click();
+  await page.locator('#rule-keyword').fill('UNKNOWN SHOP');
+  await page.locator('#rule-category').fill('items');
+  await page.locator('#rule-form button[type=submit]').click();
+
+  await expect(page.locator('#unknown-count')).toHaveText('1 rows');
+  expect(apiCalls).toBe(0);
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('dkb-dashboard-rules-v1')))
+    .toContain('UNKNOWN SHOP');
+});
+
+test('sends only selected classification fields when AI classification is requested', async ({
+  page,
+}) => {
+  await configureKeycloak(page);
 
   let requestBody;
   await page.route('**/api/classify', async (route) => {
@@ -121,6 +183,9 @@ test('sends only selected classification fields when AI classification is reques
   await expect(page.locator('#classify-status')).toHaveText('1 rules accepted.');
   expect(requestBody.transactions).toEqual([
     { id: '2026-01-02-2', recipient: 'UNKNOWN SHOP', purpose: 'Sonstiges' },
+    { id: '2026-01-01-1', recipient: 'REWE Markt', purpose: 'Lebensmittel' },
   ]);
-  expect(requestBody.transactions[0]).not.toHaveProperty('amount');
+  for (const transaction of requestBody.transactions) {
+    expect(transaction).not.toHaveProperty('amount');
+  }
 });

@@ -1,0 +1,22 @@
+scenario_id,owning_test,boundary,ci_job,priority,status
+REG-01,private_replacement_is_case_insensitive_atomic_and_user_scoped,PostgreSQL RuleStore,rust-store-integration,high,implemented
+API-PRIVATE-ROUNDTRIP,authenticated_private_rules_round_trip_through_http,Axum HTTP plus PostgreSQL,rust-store-integration,high,implemented
+API-PRIVATE-ISOLATION,private_rules_are_user_scoped_and_authentication_is_required,Auth plus Axum HTTP plus PostgreSQL,rust-store-integration,high,implemented
+API-PRIVATE-VALIDATION,invalid_private_replacement_is_visible_and_preserves_previous_data,Axum validation plus PostgreSQL,rust-store-integration,high,implemented
+API-COMMUNITY,community_rules_are_shared_and_contributor_scoped,Community HTTP plus PostgreSQL,rust-store-integration,high,implemented
+API-PUBLIC-CONTRACT,public_contracts_and_security_headers_are_explicit,Public HTTP middleware,rust-store-integration,medium,implemented
+API-MALFORMED,malformed_requests_and_invalid_hosts_fail_without_authentication,HTTP extractors plus host middleware,rust-store-integration,high,implemented
+AUTH-NEGATIVE,invalid_tokens_are_rejected_without_writing_private_rules,OIDC discovery/JWKS plus JWT validation,rust-store-integration,high,implemented
+CLASSIFY-PAYLOAD,classification_reaches_provider_with_only_permitted_fields,Axum HTTP plus controlled Gemini stub,rust-store-integration,high,implemented
+CLASSIFY-FAULTS,classification_provider_faults_are_safe_and_recoverable,Axum HTTP plus controlled Gemini stub,rust-store-integration,high,implemented
+CLASSIFY-LIMITS,classification_configuration_validation_and_rate_limits_are_enforced,Auth plus request middleware,rust-store-integration,high,implemented
+CLASSIFY-CONFIG,missing_provider_configuration_is_reported_without_an_upstream_call,API configuration plus controlled Gemini stub,rust-store-integration,medium,implemented
+REG-02,App.test.tsx imports a DKB amount with a thousands dot and no decimal cents,Frontend CSV/session,frontend,high,passing
+REG-03,App.test.tsx shows an import error and the offending line,Frontend CSV/UI,frontend,high,passing
+REG-05,dashboard.spec.js imports a CSV and renders dashboard data in the browser,Frontend browser,frontend,high,passing
+REG-06,dashboard.spec.js keeps the setup notice visible alongside a CSV import error,Production browser UI,frontend,medium,implemented
+FRONTEND-STORAGE,session.test.ts,Session storage plus Zod schema,frontend,medium,implemented
+FRONTEND-RULE-SYNC,useRuleSync.test.tsx,React hook plus API client plus browser storage,frontend,high,implemented
+E2E-RULE-PERSISTENCE,production.spec.js,Built frontend plus Rust API plus PostgreSQL plus local OIDC,production-browser-e2e,high,implemented
+DEPLOY-CONTAINER-SMOKE,test-deployment.sh,Built Docker image plus PostgreSQL plus local OIDC plus restart,container-deployment,high,implemented
+DEPLOY-APACHE-TLS,apache2.md,Apache reverse proxy plus TLS plus browser CSP,manual-release,high,deferred requires Apache/TLS host

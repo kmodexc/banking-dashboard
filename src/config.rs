@@ -10,6 +10,7 @@ pub struct Config {
     pub keycloak_client_id: String,
     pub keycloak_audience: Option<String>,
     pub gemini_api_key: Option<String>,
+    pub gemini_api_base_url: String,
     pub gemini_model: String,
     pub database_url: String,
     pub legacy_rule_store_path: Option<PathBuf>,
@@ -34,7 +35,10 @@ impl Config {
                 bail!("KEYCLOAK_ISSUER must be an absolute HTTP(S) URL");
             }
             if parsed.scheme() != "https"
-                && !matches!(parsed.host_str(), Some("localhost" | "127.0.0.1" | "::1"))
+                && !matches!(
+                    parsed.host_str(),
+                    Some("localhost" | "127.0.0.1" | "::1" | "host.docker.internal" | "oidc")
+                )
             {
                 bail!("KEYCLOAK_ISSUER must use HTTPS outside local development");
             }
@@ -74,6 +78,8 @@ impl Config {
             keycloak_client_id: env::var("KEYCLOAK_CLIENT_ID").unwrap_or_default(),
             keycloak_audience: optional_env("KEYCLOAK_AUDIENCE"),
             gemini_api_key: optional_env("GEMINI_API_KEY"),
+            gemini_api_base_url: env::var("GEMINI_API_BASE_URL")
+                .unwrap_or_else(|_| "https://generativelanguage.googleapis.com".into()),
             gemini_model: env::var("GEMINI_MODEL")
                 .unwrap_or_else(|_| "gemini-3.1-flash-lite".into()),
             database_url,

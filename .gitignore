@@ -33,6 +33,7 @@ blob-report/
 
 # Local data and databases
 *.csv
+!docs/integration-coverage.csv
 *.db
 *.sqlite
 *.sqlite3

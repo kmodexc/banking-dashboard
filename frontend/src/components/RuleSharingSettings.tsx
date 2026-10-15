@@ -19,6 +19,7 @@ export function RuleSharingSettings({
   ruleSyncStatus: string;
 }): ReactElement {
   const canEdit = Boolean(auth.token);
+  const syncFailed = ruleSyncStatus.startsWith('Could not ');
 
   return (
     <article className="panel rule-sharing-panel">
@@ -159,7 +160,16 @@ export function RuleSharingSettings({
           </button>
         </div>
       )}
-      {ruleSyncStatus && <p className="muted small">{ruleSyncStatus}</p>}
+      {ruleSyncStatus && (
+        <p
+          className={`rule-sync-status${syncFailed ? ' rule-sync-status-error' : ''}`}
+          role={syncFailed ? 'alert' : 'status'}
+          aria-live={syncFailed ? 'assertive' : 'polite'}
+        >
+          {syncFailed && <strong>Warning: </strong>}
+          {ruleSyncStatus}
+        </p>
+      )}
     </article>
   );
 }

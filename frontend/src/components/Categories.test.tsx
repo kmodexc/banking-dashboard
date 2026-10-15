@@ -165,4 +165,28 @@ describe('categories page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sync selected rules now' }));
     expect(onSyncRules).toHaveBeenCalledOnce();
   });
+
+  it('announces a rule synchronization failure as a visible warning', () => {
+    render(
+      <Categories
+        auth={signedIn}
+        entries={entries}
+        state={EMPTY_USER_CATEGORY_STATE}
+        onAdd={vi.fn()}
+        onRename={vi.fn()}
+        onDelete={vi.fn()}
+        onImport={vi.fn()}
+        rulePreferences={{ ...DEFAULT_RULE_PREFERENCES, storePrivateRules: true }}
+        onRulePreferencesChange={vi.fn()}
+        onSyncRules={vi.fn()}
+        onDeleteServerRules={vi.fn()}
+        onDeleteCommunityRules={vi.fn()}
+        ruleSyncStatus="Could not sync rules: Request failed (503)"
+      />,
+    );
+
+    const warning = screen.getByRole('alert');
+    expect(warning).toHaveTextContent('Warning: Could not sync rules: Request failed (503)');
+    expect(warning).toHaveAttribute('aria-live', 'assertive');
+  });
 });

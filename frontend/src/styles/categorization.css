@@ -348,6 +348,17 @@
 .rule-storage-actions {
   margin-top: 1rem;
 }
+.rule-sync-status {
+  margin: 1rem 0 0;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.rule-sync-status-error {
+  color: var(--danger);
+  background: #fff5f4;
+  border-color: #ffd1cc;
+}
 .rule-manager-panel {
   margin-top: 1rem;
 }

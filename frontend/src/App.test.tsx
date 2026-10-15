@@ -66,6 +66,7 @@ describe('dashboard UI', () => {
     });
     expect(await screen.findByText('1 transactions loaded')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    await waitFor(() => expect(sessionStorage.getItem(TRANSACTIONS_SESSION_KEY)).not.toBeNull());
     const stored: unknown = JSON.parse(sessionStorage.getItem(TRANSACTIONS_SESSION_KEY)!);
     expect(stored).toEqual([expect.objectContaining({ amount: -1480 })]);
   });

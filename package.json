@@ -6,11 +6,16 @@
     "build": "vite build",
     "check:types": "tsc --project tsconfig.frontend.json",
     "dev": "vite",
-    "format": "prettier --write \"frontend/**/*.{css,html,js,json,ts,tsx}\" \"*.{json,js,ts}\" \"tests/browser/**/*.js\" \".github/**/*.yml\"",
-    "format:check": "prettier --check \"frontend/**/*.{css,html,js,json,ts,tsx}\" \"*.{json,js,ts}\" \"tests/browser/**/*.js\" \".github/**/*.yml\"",
+    "format": "prettier --write \"frontend/**/*.{css,html,js,json,ts,tsx}\" \"*.{json,js,ts}\" \"*.yml\" \"tests/browser/**/*.js\" \".github/**/*.yml\"",
+    "format:check": "prettier --check \"frontend/**/*.{css,html,js,json,ts,tsx}\" \"*.{json,js,ts}\" \"*.yml\" \"tests/browser/**/*.js\" \".github/**/*.yml\"",
     "lint": "eslint frontend/src vite.config.ts",
     "test:unit": "vitest run",
-    "test:components": "playwright test"
+    "test:components": "playwright test",
+    "test:integration": "bash scripts/test-integration.sh",
+    "test:integrations": "npm run test:integration",
+    "test:e2e:production": "bash scripts/test-production-e2e.sh",
+    "test:deployment": "bash scripts/test-deployment.sh",
+    "test:all": "cargo build --locked && npm run test:unit && npm run test:components && npm run test:integrations && npm run test:e2e:production && npm run test:deployment"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

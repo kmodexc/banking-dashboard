@@ -111,9 +111,18 @@ pub async fn security_headers(
     ]
     .iter()
     .filter_map(|value| {
-        url::Url::parse(value)
-            .ok()
-            .map(|url| format!("{}://{}", url.scheme(), url.host_str().unwrap_or_default()))
+        url::Url::parse(value).ok().map(|url| {
+            let port = url
+                .port()
+                .map(|port| format!(":{port}"))
+                .unwrap_or_default();
+            format!(
+                "{}://{}{}",
+                url.scheme(),
+                url.host_str().unwrap_or_default(),
+                port
+            )
+        })
     })
     .collect::<Vec<_>>()
     .join(" ");

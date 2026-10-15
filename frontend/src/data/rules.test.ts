@@ -1,5 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { applyRules, deduplicateRules, matchesRule, unknownTransactions } from './rules';
+import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  applyRules,
+  deduplicateRules,
+  loadLocalRules,
+  matchesRule,
+  saveLocalRules,
+  unknownTransactions,
+} from './rules';
 import type { CategoryRule, Transaction } from '../types';
 
 const transaction: Transaction = {
@@ -14,6 +21,8 @@ const transaction: Transaction = {
 };
 
 describe('categorization rules', () => {
+  beforeEach(() => localStorage.clear());
+
   it('deduplicates rules using the same case-insensitive server key', () => {
     const rules: CategoryRule[] = [
       { keyword: 'SPC.CAFE', category: 'restaurant', column: 'recipient' },
@@ -60,5 +69,17 @@ describe('categorization rules', () => {
         { keyword: 'monthly', category: 'vacation', column: 'recipient' },
       ),
     ).toBe(false);
+  });
+
+  it('restores custom browser rules after a reload', () => {
+    const customRule: CategoryRule = {
+      keyword: 'MY CUSTOM SHOP',
+      category: 'my-category',
+      column: 'recipient',
+    };
+
+    saveLocalRules([customRule]);
+
+    expect(loadLocalRules()).toEqual([customRule]);
   });
 });

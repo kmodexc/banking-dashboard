@@ -9,6 +9,7 @@ use crate::{
 pub async fn classify(
     client: &Client,
     api_key: Option<&str>,
+    api_base_url: &str,
     model: &str,
     request: &ClassificationRequest,
     max_transactions: usize,
@@ -33,6 +34,7 @@ Classify these bank transactions. Return a JSON array with at most one rule per
 transaction. Each object must contain keyword, category, column, and confidence.
 Use only these exact categories: {categories}.
 column must be exactly recipient, purpose, or both. confidence must be between 0 and 1.
+Only return rules whose confidence is at least {threshold}.
 Choose short, specific merchant or purpose keywords that can be matched as a
 case-insensitive substring. Do not include account numbers, names of private
 individuals, or full transaction descriptions in keywords.
@@ -41,7 +43,8 @@ Transactions:
 {transactions}
 "#,
         transactions = serde_json::to_string(&transactions)
-            .map_err(|_| AppError::Internal(anyhow::anyhow!("could not encode transactions")))?
+            .map_err(|_| AppError::Internal(anyhow::anyhow!("could not encode transactions")))?,
+        threshold = request.confidence_threshold,
     );
 
     let payload = json!({
@@ -50,7 +53,8 @@ Transactions:
     });
     let response = client
         .post(format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+            "{}/v1beta/models/{model}:generateContent",
+            api_base_url.trim_end_matches('/')
         ))
         .query(&[("key", api_key)])
         .json(&payload)

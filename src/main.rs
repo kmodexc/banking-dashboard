@@ -1,21 +1,13 @@
-mod app;
-mod auth;
-mod classifier;
-mod config;
-mod error;
-mod handlers;
-mod middleware;
-mod models;
-mod rules;
-
 use std::sync::Arc;
 
 use anyhow::Context;
-use app::{AppState, serve};
-use auth::Authenticator;
-use config::Config;
-use middleware::RateLimiter;
-use rules::RuleStore;
+use dkb_dashboard_api::{
+    app::{AppState, serve},
+    auth::Authenticator,
+    config::Config,
+    middleware::RateLimiter,
+    rules::RuleStore,
+};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
