@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseImportedRules, saveLocalRules } from '../data/rules';
 import { saveRulePreferences } from '../data/preferences';
-import type { AuthSnapshot, CategoryRule } from '../types';
+import type { AuthSnapshot, CategoryRule, ClassificationRule } from '../types';
 import { useRuleSync } from './useRuleSync';
 
 const signedIn: AuthSnapshot = {
@@ -81,6 +81,19 @@ const privateRule: CategoryRule = {
   column: 'recipient',
 };
 
+const updatedRule: CategoryRule = {
+  keyword: 'PRIVATE SHOP UPDATED',
+  category: 'my-category',
+  column: 'both',
+};
+
+const aiRule: ClassificationRule = {
+  keyword: 'CLASSIFIED SHOP',
+  category: 'items',
+  column: 'recipient',
+  confidence: 0.94,
+};
+
 const importedRuleSet = [globalRule, privateRule];
 const ruleOrigins = ['created', 'imported'] as const;
 const localOnlyPreferences = {
@@ -110,6 +123,14 @@ function requestBody(init: RequestInit | undefined): unknown {
   const body = init?.body;
   if (typeof body !== 'string') throw new Error('Expected a JSON request body');
   return JSON.parse(body) as unknown;
+}
+
+function preferenceValues(preferences: SyncPreferences): SyncPreferences {
+  return {
+    storePrivateRules: preferences.storePrivateRules,
+    useCommunityRules: preferences.useCommunityRules,
+    contributeRules: preferences.contributeRules,
+  };
 }
 
 describe('useRuleSync', () => {
@@ -180,10 +201,12 @@ describe('useRuleSync', () => {
       );
       expect(requestBody(communityUpload?.init)).toEqual({ rules: expectedCommunity });
     }
-    if (!preferences.storePrivateRules && !preferences.contributeRules) {
+    if (!preferences.storePrivateRules) {
       expect(
         calls.some(({ url, init }) => url.endsWith('/api/rules') && init?.method === 'PUT'),
       ).toBe(false);
+    }
+    if (!preferences.contributeRules) {
       expect(
         calls.some(
           ({ url, init }) => url.endsWith('/api/community/rules') && init?.method === 'POST',
@@ -417,6 +440,113 @@ describe('useRuleSync', () => {
       act(() => view.result.current.replaceLocalRules(imported));
       await expectConfiguredSync(preferences, imported, [globalRule], false);
       expect(view.result.current.localRules).toEqual(imported);
+    },
+  );
+
+  it.each(
+    ['before login', 'after login'].flatMap((timing) =>
+      syncCombinations.map((preferences) => ({ timing, preferences })),
+    ),
+  )(
+    'syncs updated rules made $timing for the $preferences.name combination',
+    async ({ timing, preferences }) => {
+      const originalRules = [privateRule, globalRule];
+      saveLocalRules(originalRules);
+      saveRulePreferences(preferenceValues(preferences), 'alice');
+      const view = renderHook(
+        ({ auth }: { auth: AuthSnapshot }) =>
+          useRuleSync(auth, auth.user?.sub ?? 'authenticated-user'),
+        { initialProps: { auth: signedOut } },
+      );
+
+      await waitFor(() =>
+        expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
+      );
+      if (timing === 'after login') {
+        view.rerender({ auth: signedIn });
+        await expectConfiguredSync(preferences, originalRules, [globalRule]);
+        calls.length = 0;
+      }
+
+      act(() => view.result.current.updateUserRule(privateRule, updatedRule));
+      expect(view.result.current.localRules).toEqual([updatedRule, globalRule]);
+      if (timing === 'before login') view.rerender({ auth: signedIn });
+
+      await expectConfiguredSync(
+        preferences,
+        [updatedRule, globalRule],
+        [globalRule],
+        timing === 'before login',
+      );
+    },
+  );
+
+  it.each(
+    ['before login', 'after login'].flatMap((timing) =>
+      syncCombinations.map((preferences) => ({ timing, preferences })),
+    ),
+  )(
+    'syncs deleted rules made $timing for the $preferences.name combination',
+    async ({ timing, preferences }) => {
+      const originalRules = [privateRule, globalRule];
+      saveLocalRules(originalRules);
+      saveRulePreferences(preferenceValues(preferences), 'alice');
+      const view = renderHook(
+        ({ auth }: { auth: AuthSnapshot }) =>
+          useRuleSync(auth, auth.user?.sub ?? 'authenticated-user'),
+        { initialProps: { auth: signedOut } },
+      );
+
+      await waitFor(() =>
+        expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
+      );
+      if (timing === 'after login') {
+        view.rerender({ auth: signedIn });
+        await expectConfiguredSync(preferences, originalRules, [globalRule]);
+        calls.length = 0;
+      }
+
+      act(() => view.result.current.deleteUserRule(privateRule));
+      expect(view.result.current.localRules).toEqual([globalRule]);
+      if (timing === 'before login') view.rerender({ auth: signedIn });
+
+      await expectConfiguredSync(
+        preferences,
+        [globalRule],
+        [globalRule],
+        timing === 'before login',
+      );
+    },
+  );
+
+  it.each(syncCombinations)(
+    'syncs AI-created rules after login for the $name combination',
+    async (preferences) => {
+      saveRulePreferences(preferenceValues(preferences), 'alice');
+      const view = renderHook(
+        ({ auth }: { auth: AuthSnapshot }) =>
+          useRuleSync(auth, auth.user?.sub ?? 'authenticated-user'),
+        { initialProps: { auth: signedOut } },
+      );
+
+      await waitFor(() =>
+        expect(calls.some(({ url }) => url.endsWith('/default-rules.json'))).toBe(true),
+      );
+      view.rerender({ auth: signedIn });
+      if (preferences.useCommunityRules) {
+        await waitFor(() =>
+          expect(
+            calls.some(
+              ({ url, init }) => url.includes('/api/rules?include_community=true') && !init?.method,
+            ),
+          ).toBe(true),
+        );
+      }
+      calls.length = 0;
+
+      act(() => view.result.current.addRules([aiRule]));
+      await expectConfiguredSync(preferences, [aiRule], [aiRule], false);
+      expect(view.result.current.localRules).toEqual([aiRule]);
     },
   );
 
