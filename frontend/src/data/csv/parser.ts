@@ -90,13 +90,18 @@ export function parseDate(value: string | undefined): string {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
-export function parseAmount(value: string | undefined): number {
+export function parseAmount(value: string | undefined, thousandsSeparator?: '.' | ','): number {
   const clean = String(value ?? '')
     .trim()
     .replace(/\s*€$/, '')
     .trim();
   let normalized: string;
-  if (/^[+-]?\d+(?:[.,]\d{1,2})?$/.test(clean)) {
+  // Use the bank's known grouping convention to resolve whole amounts such as 1.480.
+  if (thousandsSeparator === '.' && /^[+-]?\d{1,3}(?:\.\d{3})+$/.test(clean)) {
+    normalized = clean.replace(/\./g, '');
+  } else if (thousandsSeparator === ',' && /^[+-]?\d{1,3}(?:,\d{3})+$/.test(clean)) {
+    normalized = clean.replace(/,/g, '');
+  } else if (/^[+-]?\d+(?:[.,]\d{1,2})?$/.test(clean)) {
     normalized = clean.replace(',', '.');
   } else if (/^[+-]?\d{1,3}(?:\.\d{3})+,\d{1,2}$/.test(clean)) {
     normalized = clean.replace(/\./g, '').replace(',', '.');

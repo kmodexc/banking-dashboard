@@ -175,7 +175,7 @@ for (const bank of ['db', 'dkb'] as const) {
         expect(transactions).toHaveLength(1);
         expect(transactions[0]?.amount).toBe(expected);
       });
-      it.each(invalidAmounts)(
+      it.each(invalidAmounts.filter((amount) => bank !== 'dkb' || amount !== '1.234'))(
         'reports the source line for %j and rejects the whole import',
         async (amount) => {
           const badLine = encodeRow(transactionColumns(bank, amount), separator);
@@ -234,3 +234,44 @@ it.each(['"unclosed', 'un"expected', '"closed"extra'])(
     expect(() => parseCsv(`header\n${field}`)).toThrow(`Line 2:`);
   },
 );
+
+it.each([';', ',', '\t'])(
+  'imports DKB whole-euro grouping with separator %j',
+  async (separator) => {
+    for (const [amount, expected] of [
+      ['-1.480', -1480],
+      ['1.234', 1234],
+      ['12.345', 12345],
+      ['123.456', 123456],
+    ] as const) {
+      const text = [
+        encodeRow(bankHeaders.dkb, separator),
+        encodeRow(transactionColumns('dkb', amount), separator),
+      ].join('\n');
+      const transactions = await readTransactions(new File([text], 'dkb.csv'));
+      expect(transactions[0]?.amount).toBe(expected);
+    }
+  },
+);
+
+it('imports the reported 12-column DKB rent row with a two-digit year', async () => {
+  // Preserve the reported structure while keeping personal details out of the fixture.
+  const row =
+    '"28.09.26";"28.09.26";"Gebucht";"Account holder";"Landlord";"Miete + NK, Example address";"Ausgang";"DE00000000000000000000";"-1.480";"";"";""';
+  const text = ['Export', '', '', '', '', '', bankHeaders.dkb.join(';'), row].join('\n');
+  const transactions = await readTransactions(new File([text], 'rent.csv'));
+  expect(transactions).toHaveLength(1);
+  expect(transactions[0]).toMatchObject({
+    date: '2026-09-28',
+    amount: -1480,
+    recipient: 'Landlord',
+    type: 'Ausgang',
+  });
+});
+
+it('uses DKB grouping for modern rows too', () => {
+  const columns = Array<string>(17).fill('');
+  columns[0] = '28.09.26';
+  columns[15] = '-1.480';
+  expect(normalizeRows([columns])[0]?.amount).toBe(-1480);
+});

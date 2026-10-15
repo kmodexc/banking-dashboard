@@ -42,7 +42,7 @@ describe('dashboard UI', () => {
     expect(screen.getByText('UNKNOWN SHOP')).toBeInTheDocument();
   });
 
-  it.each(['1.234', '1,234', '', '1.23.456,78'])(
+  it.each(['1,234', '', '1.23.456,78'])(
     'shows an import error and the offending line for %j',
     async (amount) => {
       render(<App />);
@@ -56,6 +56,19 @@ describe('dashboard UI', () => {
       expect(screen.queryByText('1 transactions loaded')).not.toBeInTheDocument();
     },
   );
+
+  it('imports a DKB amount with a thousands dot and no decimal cents', async () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText<HTMLInputElement>('Choose CSV export'), {
+      target: {
+        files: [new File([csv.replace('-8,00', '-1.480')], 'rent.csv', { type: 'text/csv' })],
+      },
+    });
+    expect(await screen.findByText('1 transactions loaded')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    const stored: unknown = JSON.parse(sessionStorage.getItem(TRANSACTIONS_SESSION_KEY)!);
+    expect(stored).toEqual([expect.objectContaining({ amount: -1480 })]);
+  });
 
   it('restores imported transactions after a page reload', async () => {
     sessionStorage.setItem(

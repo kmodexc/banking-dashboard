@@ -22,7 +22,7 @@ export function normalizeDkbRows(rows: string[][]): Transaction[] {
       );
 
     const isLegacyFormat = columns.length === 12;
-    const amount = parseAmount(isLegacyFormat ? columns[8] : (columns[15] ?? columns[16]));
+    const amount = parseAmount(isLegacyFormat ? columns[8] : (columns[15] ?? columns[16]), '.');
     if (!Number.isFinite(amount))
       throw rowError(columns, index, 'Missing, invalid or ambiguous amount');
 
