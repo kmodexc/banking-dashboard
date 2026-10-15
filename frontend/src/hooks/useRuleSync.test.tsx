@@ -550,6 +550,30 @@ describe('useRuleSync', () => {
     },
   );
 
+  it('removes all editable rules locally and syncs an empty collection', async () => {
+    saveLocalRules([globalRule, privateRule]);
+    saveRulePreferences(
+      { storePrivateRules: true, useCommunityRules: true, contributeRules: true },
+      'alice',
+    );
+    const view = renderHook(() => useRuleSync(signedIn, 'alice'));
+
+    await waitFor(() =>
+      expect(calls.some(({ url }) => url.includes('/api/rules?include_community=true'))).toBe(true),
+    );
+    calls.length = 0;
+
+    act(() => view.result.current.replaceLocalRules([]));
+    await expectConfiguredSync(
+      { storePrivateRules: true, useCommunityRules: true, contributeRules: true },
+      [],
+      [],
+      false,
+    );
+    expect(view.result.current.localRules).toEqual([]);
+    expect(localStorage.getItem('dkb-dashboard-rules-v1')).toBe('[]');
+  });
+
   it.each(
     ruleOrigins.flatMap((origin) =>
       syncCombinations.map((preferences) => ({ origin, preferences })),

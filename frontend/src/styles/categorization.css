@@ -278,6 +278,17 @@
 .danger-button {
   color: var(--danger);
 }
+.remove-all-rules-button {
+  border-color: var(--danger);
+  color: #fff;
+  background: var(--danger);
+}
+.remove-all-rules-button:hover:not(:disabled) {
+  background: #8f1d15;
+}
+.rule-confirmation {
+  max-width: 540px;
+}
 .rule-sharing-panel {
   margin-top: 1rem;
 }

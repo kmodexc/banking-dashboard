@@ -29,6 +29,7 @@ export function RuleManager({
   onImport,
   onUpdate,
   onDelete,
+  onRemoveAll,
 }: {
   rules: ManagedRule[];
   categories: RuleCategoryOption[];
@@ -36,12 +37,15 @@ export function RuleManager({
   onImport: (rules: CategoryRule[]) => void;
   onUpdate: (previous: CategoryRule, next: CategoryRule) => void;
   onDelete: (rule: CategoryRule) => void;
+  onRemoveAll: () => void;
 }): ReactElement {
   const fileInput = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState('');
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<CategoryRule | null>(null);
   const [message, setMessage] = useState('');
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const normalizedFilter = filter.trim().toLocaleLowerCase();
   const visibleRules = useMemo(
     () =>
@@ -106,6 +110,22 @@ export function RuleManager({
     setMessage('Rules exported.');
   }
 
+  function openDeleteAllConfirmation(): void {
+    setDeleteConfirmation('');
+    setDeleteAllOpen(true);
+  }
+
+  function cancelDeleteAll(): void {
+    setDeleteConfirmation('');
+    setDeleteAllOpen(false);
+  }
+
+  function removeAllRules(): void {
+    if (deleteConfirmation !== 'delete') return;
+    onRemoveAll();
+    cancelDeleteAll();
+  }
+
   async function importRules(event: ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = '';
@@ -147,6 +167,14 @@ export function RuleManager({
             onChange={(event) => void importRules(event)}
           />
         </label>
+        <button
+          className="button remove-all-rules-button"
+          type="button"
+          disabled={!rulesToExport.length}
+          onClick={openDeleteAllConfirmation}
+        >
+          Remove all rules
+        </button>
       </div>
       <p className="muted small">
         Importing replaces your editable rules. Read-only shared rules stay unchanged.
@@ -211,6 +239,44 @@ export function RuleManager({
         })}
       </div>
       {!visibleRules.length && <p className="muted">No rules match this filter.</p>}
+      {deleteAllOpen && (
+        <div className="modal-backdrop">
+          <section
+            className="details-modal rule-confirmation"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="remove-all-rules-title"
+          >
+            <h2 id="remove-all-rules-title">Remove all rules?</h2>
+            <p>
+              This removes all editable user rules from this browser and, when enabled, from the
+              private server copy. Shared and global read-only rules will remain available.
+            </p>
+            <label htmlFor="remove-all-rules-confirmation">
+              Type <code>delete</code> to confirm
+              <input
+                id="remove-all-rules-confirmation"
+                value={deleteConfirmation}
+                onChange={(event) => setDeleteConfirmation(event.currentTarget.value)}
+                autoFocus
+              />
+            </label>
+            <div className="category-actions">
+              <button className="button secondary" type="button" onClick={cancelDeleteAll}>
+                Cancel
+              </button>
+              <button
+                className="button remove-all-rules-button"
+                type="button"
+                disabled={deleteConfirmation !== 'delete'}
+                onClick={removeAllRules}
+              >
+                OK
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </article>
   );
 }

@@ -32,6 +32,7 @@ describe('rule manager', () => {
         onImport={vi.fn()}
         onUpdate={vi.fn()}
         onDelete={vi.fn()}
+        onRemoveAll={vi.fn()}
       />,
     );
 
@@ -56,6 +57,7 @@ describe('rule manager', () => {
         onImport={vi.fn()}
         onUpdate={onUpdate}
         onDelete={onDelete}
+        onRemoveAll={vi.fn()}
       />,
     );
 
@@ -85,6 +87,7 @@ describe('rule manager', () => {
         onImport={onImport}
         onUpdate={vi.fn()}
         onDelete={vi.fn()}
+        onRemoveAll={vi.fn()}
       />,
     );
 
@@ -120,6 +123,7 @@ describe('rule manager', () => {
         onImport={vi.fn()}
         onUpdate={vi.fn()}
         onDelete={vi.fn()}
+        onRemoveAll={vi.fn()}
       />,
     );
 
@@ -133,5 +137,40 @@ describe('rule manager', () => {
     expect(screen.getByText('Rules exported.')).toBeInTheDocument();
     click.mockRestore();
     vi.unstubAllGlobals();
+  });
+
+  it('requires typing delete and supports cancel before removing all user rules', () => {
+    const onRemoveAll = vi.fn();
+    render(
+      <RuleManager
+        rules={[rules[0]!]}
+        categories={[{ value: 'groceries', label: 'groceries' }]}
+        rulesToExport={[userRule]}
+        onImport={vi.fn()}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onRemoveAll={onRemoveAll}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove all rules' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'OK' })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/Type delete to confirm/), {
+      target: { value: 'DELETE' },
+    });
+    expect(screen.getByRole('button', { name: 'OK' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onRemoveAll).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove all rules' }));
+    fireEvent.change(screen.getByLabelText(/Type delete to confirm/), {
+      target: { value: 'delete' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+    expect(onRemoveAll).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

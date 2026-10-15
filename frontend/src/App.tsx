@@ -359,6 +359,7 @@ export function App(): ReactElement {
                   onImport={replaceLocalRules}
                   onUpdate={updateUserRule}
                   onDelete={deleteUserRule}
+                  onRemoveAll={() => replaceLocalRules([])}
                 />
               </>
             )}
