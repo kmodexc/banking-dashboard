@@ -74,7 +74,10 @@ impl RuleStore {
     }
 
     pub async fn ping(&self) -> Result<(), sqlx::Error> {
-        sqlx::query("SELECT 1").execute(&self.pool).await.map(|_| ())
+        sqlx::query("SELECT 1")
+            .execute(&self.pool)
+            .await
+            .map(|_| ())
     }
 
     pub async fn replace_private(&self, subject: &str, rules: &[Rule]) -> Result<(), sqlx::Error> {
@@ -121,8 +124,7 @@ impl RuleStore {
         .await?;
         value
             .map(|value| {
-                serde_json::from_value(value)
-                    .map_err(|error| sqlx::Error::Decode(Box::new(error)))
+                serde_json::from_value(value).map_err(|error| sqlx::Error::Decode(Box::new(error)))
             })
             .transpose()
     }
