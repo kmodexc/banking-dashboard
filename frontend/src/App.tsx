@@ -255,9 +255,18 @@ export function App(): ReactElement {
         />
       </header>
       <main className="page-shell">
-        {(auth.setupError || loadError) && (
+        {auth.setupError && (
           <section id="setup-panel" className="panel notice">
-            {auth.setupError || loadError}
+            {auth.setupError}
+          </section>
+        )}
+        {loadError && (
+          <section
+            className="panel notice"
+            role="alert"
+            style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+          >
+            {loadError}
           </section>
         )}
         {!transactions.length ? (

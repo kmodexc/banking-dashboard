@@ -1,37 +1,76 @@
+const sourceRows = new WeakMap<string[], { line: number; text: string }>();
+
+export function rowError(columns: string[], index: number, message: string): Error {
+  const source = sourceRows.get(columns);
+  return new Error(
+    `Line ${source?.line ?? index + 1}: ${message}\n${source?.text ?? columns.join(';')}`,
+  );
+}
+
 export function parseCsv(text: string): string[][] {
   const source = text.replace(/^\uFEFF/, '');
+  // Bank headers identify the delimiter without confusing decimal commas with columns.
+  const delimiter = source.match(/^"?(?:Belegdatum|Buchungstag)"?([;,\t])/im)?.[1] ?? ';';
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
   let quoted = false;
-
+  let closedQuote = false;
+  let line = 1;
+  let startLine = 1;
+  let start = 0;
+  const fail = (message: string, end: number): never => {
+    throw new Error(`Line ${startLine}: ${message}\n${source.slice(start, end)}`);
+  };
+  const finish = (end: number): void => {
+    row.push(field);
+    if (row.some((value) => value.trim())) {
+      sourceRows.set(row, { line: startLine, text: source.slice(start, end) });
+      rows.push(row);
+    }
+    row = [];
+    field = '';
+    closedQuote = false;
+  };
   for (let index = 0; index < source.length; index += 1) {
     const character = source[index];
     if (character === '"') {
       if (quoted && source[index + 1] === '"') {
         field += '"';
         index += 1;
+      } else if (quoted) {
+        quoted = false;
+        closedQuote = true;
       } else {
-        quoted = !quoted;
+        if (field || closedQuote)
+          fail(
+            'Unexpected quote in CSV field',
+            source.indexOf('\n', index) < 0 ? source.length : source.indexOf('\n', index),
+          );
+        quoted = true;
       }
-    } else if (character === ';' && !quoted) {
+    } else if (character === delimiter && !quoted) {
       row.push(field);
       field = '';
+      closedQuote = false;
     } else if ((character === '\n' || character === '\r') && !quoted) {
+      finish(index);
       if (character === '\r' && source[index + 1] === '\n') index += 1;
-      row.push(field);
-      if (row.some((value) => value.trim())) rows.push(row);
-      row = [];
-      field = '';
+      line += 1;
+      startLine = line;
+      start = index + 1;
     } else {
+      if (closedQuote)
+        fail(
+          'Unexpected text after closing quote',
+          source.indexOf('\n', index) < 0 ? source.length : source.indexOf('\n', index),
+        );
       field += character;
+      if (character === '\n' || (character === '\r' && source[index + 1] !== '\n')) line += 1;
     }
   }
-
-  if (field || row.length) {
-    row.push(field);
-    rows.push(row);
-  }
+  if (quoted) fail('Unclosed quoted CSV field', source.length);
+  if (field || row.length || closedQuote) finish(source.length);
   return rows;
 }
 
@@ -52,15 +91,27 @@ export function parseDate(value: string | undefined): string {
 }
 
 export function parseAmount(value: string | undefined): number {
-  let clean = String(value ?? '').replace(/[€\s]/g, '');
-  if (clean.includes(',') && clean.includes('.')) {
-    clean =
-      clean.lastIndexOf(',') > clean.lastIndexOf('.')
-        ? clean.replace(/\./g, '').replace(',', '.')
-        : clean.replace(/,/g, '');
+  const clean = String(value ?? '')
+    .trim()
+    .replace(/\s*€$/, '')
+    .trim();
+  let normalized: string;
+  if (/^[+-]?\d+(?:[.,]\d{1,2})?$/.test(clean)) {
+    normalized = clean.replace(',', '.');
+  } else if (/^[+-]?\d{1,3}(?:\.\d{3})+,\d{1,2}$/.test(clean)) {
+    normalized = clean.replace(/\./g, '').replace(',', '.');
+  } else if (/^[+-]?\d{1,3}(?:,\d{3})+\.\d{1,2}$/.test(clean)) {
+    normalized = clean.replace(/,/g, '');
+  } else if (/^[+-]?\d{1,3}(?:\.\d{3}){2,}$/.test(clean)) {
+    normalized = clean.replace(/\./g, '');
+  } else if (/^[+-]?\d{1,3}(?:,\d{3}){2,}$/.test(clean)) {
+    normalized = clean.replace(/,/g, '');
   } else {
-    clean = clean.replace(',', '.');
+    // A single separator followed by three digits is ambiguous without a locale.
+    return Number.NaN;
   }
-  const amount = Number(clean);
-  return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : Number.NaN;
+  const amount = Number(normalized);
+  return Number.isSafeInteger(Math.round(amount * 100))
+    ? Math.round(amount * 100) / 100
+    : Number.NaN;
 }

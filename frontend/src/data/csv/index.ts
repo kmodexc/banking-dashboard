@@ -1,7 +1,7 @@
 import type { Transaction } from '../../types';
 import { isDeutscheBankHeader, normalizeDeutscheBankRows } from './deutsche-bank';
 import { normalizeDkbRows } from './dkb';
-import { parseCsv } from './parser';
+import { parseCsv, rowError } from './parser';
 
 export { parseAmount, parseCsv, parseDate } from './parser';
 
@@ -15,7 +15,16 @@ export function normalizeRows(rows: string[][]): Transaction[] {
 }
 
 export async function readTransactions(file: File): Promise<Transaction[]> {
-  const transactions = normalizeRows(parseCsv(await file.text()));
-  if (!transactions.length) throw new Error('No valid transaction rows were found');
+  const rows = parseCsv(await file.text());
+  const transactions = normalizeRows(rows);
+  if (!transactions.length) {
+    if (rows[0])
+      throw rowError(
+        rows[0],
+        0,
+        'No valid transaction rows were found; check the format and separator',
+      );
+    throw new Error('No valid transaction rows were found: the file is empty');
+  }
   return transactions;
 }

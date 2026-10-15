@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeRows, parseAmount, parseCsv, parseDate } from './csv';
+import { normalizeRows, parseAmount, parseCsv, parseDate, readTransactions } from './csv';
 
 describe('CSV parsing', () => {
   it('parses quoted semicolon fields and German numbers', () => {
@@ -73,3 +73,164 @@ describe('CSV parsing', () => {
     ]);
   });
 });
+
+const validAmounts = [
+  ['1.234,56', 1234.56],
+  ['1,234.56', 1234.56],
+  ['1.234.567', 1234567],
+  ['1,234,567', 1234567],
+  ['1.234.567,89', 1234567.89],
+  ['1,234,567.89', 1234567.89],
+  ['1234', 1234],
+  ['12,34', 12.34],
+  ['12.34', 12.34],
+  ['-8,4', -8.4],
+  ['+8.40', 8.4],
+  ['0', 0],
+  [' 1.234,56 € ', 1234.56],
+] as const;
+const invalidAmounts = [
+  '1.234',
+  '1,234',
+  '',
+  ' ',
+  '1.23.456,78',
+  '1,23,456.78',
+  '12,34,56',
+  '12.34.56',
+  '1e3',
+  '0x10',
+  'Infinity',
+  'NaN',
+  '1 2',
+  '12,3456',
+  '9007199254740992',
+];
+const bankHeaders = {
+  db: [
+    'Belegdatum',
+    'Eingangstag',
+    'Verwendungszweck',
+    'Fremdwährung',
+    'Betrag',
+    'Kurs',
+    'Betrag',
+    'Währung',
+  ],
+  dkb: [
+    'Buchungstag',
+    'Wertstellung',
+    'Buchungstext',
+    'Kontonummer',
+    'Empfänger',
+    'Zweck',
+    'Art',
+    'Saldo',
+    'Umsatz',
+    'A',
+    'B',
+    'C',
+  ],
+};
+function transactionColumns(bank: keyof typeof bankHeaders, amount: string): string[] {
+  return bank === 'db'
+    ? ['25.9.2026', '28.9.2026', 'SHOP, location', 'USD', '-100', '0,9', amount, 'EUR']
+    : [
+        '25.9.2026',
+        '28.9.2026',
+        'Kartenzahlung',
+        '',
+        'SHOP, location',
+        'Purpose',
+        'Ausgang',
+        '',
+        amount,
+        '',
+        '',
+        '',
+      ];
+}
+function encodeRow(columns: string[], separator: string): string {
+  return columns.map((value) => `"${value.replace(/"/g, '""')}"`).join(separator);
+}
+
+describe('amount validation', () => {
+  it.each(validAmounts)('parses %s as %s', (value, expected) => {
+    expect(parseAmount(value)).toBe(expected);
+  });
+  it.each(invalidAmounts)('rejects %j rather than guessing or rounding', (value) => {
+    expect(parseAmount(value)).toBeNaN();
+  });
+});
+
+for (const bank of ['db', 'dkb'] as const) {
+  for (const separator of [';', ',', '\t']) {
+    describe(`${bank} imports using ${JSON.stringify(separator)}`, () => {
+      it.each(validAmounts)('imports %s correctly', async (amount, expected) => {
+        const text = [
+          encodeRow(bankHeaders[bank], separator),
+          encodeRow(transactionColumns(bank, amount), separator),
+        ].join('\r\n');
+        const transactions = await readTransactions(new File([text], 'test.csv'));
+        expect(transactions).toHaveLength(1);
+        expect(transactions[0]?.amount).toBe(expected);
+      });
+      it.each(invalidAmounts)(
+        'reports the source line for %j and rejects the whole import',
+        async (amount) => {
+          const badLine = encodeRow(transactionColumns(bank, amount), separator);
+          const text = [
+            '\uFEFFExport',
+            '',
+            encodeRow(bankHeaders[bank], separator),
+            encodeRow(transactionColumns(bank, '12,34'), separator),
+            badLine,
+          ].join('\r\n');
+          await expect(readTransactions(new File([text], 'test.csv'))).rejects.toThrow(`Line 5:`);
+          await expect(readTransactions(new File([text], 'test.csv'))).rejects.toThrow(badLine);
+        },
+      );
+    });
+  }
+}
+
+it('rejects an unquoted decimal comma that creates an extra column', async () => {
+  const line = transactionColumns('db', '12,34')
+    .map((v, i) => (i === 6 ? v : `"${v}"`))
+    .join(',');
+  const text = `${bankHeaders.db.join(',')}\n${line}`;
+  await expect(readTransactions(new File([text], 'test.csv'))).rejects.toThrow(
+    `Line 2: Expected 8 columns`,
+  );
+  await expect(readTransactions(new File([text], 'test.csv'))).rejects.toThrow(line);
+});
+
+it('uses the billed EUR amount instead of the foreign amount', () => {
+  expect(normalizeRows([bankHeaders.db, transactionColumns('db', '-90')])[0]?.amount).toBe(-90);
+});
+
+it('rejects a non-EUR billed currency', () => {
+  const columns = transactionColumns('db', '-90');
+  columns[7] = 'USD';
+  expect(() => normalizeRows([bankHeaders.db, columns])).toThrow('Billed currency must be EUR');
+});
+
+it('retains physical line numbers after multiline fields and blank lines', () => {
+  const text = [
+    bankHeaders.db.join(';'),
+    encodeRow(
+      transactionColumns('db', '12,34').map((v, i) => (i === 2 ? 'SHOP\nlocation' : v)),
+      ';',
+    ),
+    '',
+    encodeRow(transactionColumns('db', '1.234'), ';'),
+  ].join('\n');
+  expect(() => normalizeRows(parseCsv(text))).toThrow('Line 5:');
+});
+
+it.each(['"unclosed', 'un"expected', '"closed"extra'])(
+  'reports malformed quoting in %s',
+  (field) => {
+    expect(() => parseCsv(`header\n${field}`)).toThrow(`Line 2:`);
+  },
+);

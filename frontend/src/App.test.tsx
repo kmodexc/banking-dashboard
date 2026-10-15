@@ -42,6 +42,21 @@ describe('dashboard UI', () => {
     expect(screen.getByText('UNKNOWN SHOP')).toBeInTheDocument();
   });
 
+  it.each(['1.234', '1,234', '', '1.23.456,78'])(
+    'shows an import error and the offending line for %j',
+    async (amount) => {
+      render(<App />);
+      const invalidCsv = csv.replace('-8,00', amount);
+      fireEvent.change(screen.getByLabelText<HTMLInputElement>('Choose CSV export'), {
+        target: { files: [new File([invalidCsv], 'invalid.csv', { type: 'text/csv' })] },
+      });
+      const error = await screen.findByRole('alert');
+      expect(error).toHaveTextContent('Line 2:');
+      expect(error).toHaveTextContent(invalidCsv.split('\n')[1]!);
+      expect(screen.queryByText('1 transactions loaded')).not.toBeInTheDocument();
+    },
+  );
+
   it('restores imported transactions after a page reload', async () => {
     sessionStorage.setItem(
       TRANSACTIONS_SESSION_KEY,
