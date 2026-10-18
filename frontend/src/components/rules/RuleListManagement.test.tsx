@@ -74,7 +74,7 @@ describe('rule summary list management', () => {
     expect(rows[1]).toHaveTextContent('OLD SHOP');
   });
 
-  it('edits and deletes a rule from its details modal', () => {
+  it('edits a rule in its details modal and deletes it from the list', () => {
     const onUpdate = vi.fn();
     const onDelete = vi.fn();
     render(
@@ -83,7 +83,7 @@ describe('rule summary list management', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /SPC\.CAFE/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^SPC\.CAFE/ }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Keyword' }), {
       target: { value: 'SPC.BAKERY' },
     });
@@ -94,10 +94,9 @@ describe('rule summary list management', () => {
       column: 'recipient',
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /SPC\.CAFE/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Delete rule' }));
-    expect(screen.getByText(/This cannot be undone/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete rule SPC.CAFE' }));
+    expect(screen.getByRole('heading', { name: 'Delete rule?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^Delete rule$/ }));
     expect(onDelete).toHaveBeenCalledWith(userRule);
   });
 

@@ -39,6 +39,7 @@ export function RuleList({ rulesController }: { rulesController: RulesController
   const [message, setMessage] = useState('');
   const [sort, setSort] = useState<RuleSort>('time');
   const [selectedEntry, setSelectedEntry] = useState<ManagedRule | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ManagedRule | null>(null);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const normalizedFilter = filter.trim().toLocaleLowerCase();
@@ -131,6 +132,12 @@ export function RuleList({ rulesController }: { rulesController: RulesController
     cancelDeleteAll();
   }
 
+  function deleteRule(): void {
+    if (!deleteTarget) return;
+    actions.deleteRule(getRule(deleteTarget));
+    setDeleteTarget(null);
+  }
+
   return (
     <section className="recent-rules rule-list-panel panel" aria-labelledby="rules-heading">
       <div className="rule-list-heading">
@@ -212,25 +219,37 @@ export function RuleList({ rulesController }: { rulesController: RulesController
                 className="recent-rule rule-list-item rule-row"
                 key={`${'source' in entry ? entry.source : 'user'}:${key}`}
               >
-                <button
-                  className="rule-summary-trigger"
-                  type="button"
-                  onClick={() => setSelectedEntry(entry)}
-                >
-                  <span className="rule-list-main">
-                    <strong>{rule.keyword}</strong>
-                    <span className="rule-list-category">{getCategoryLabel(entry)}</span>
-                  </span>
-                  <span className="rule-list-meta">
-                    <span className="rule-list-chip">Searches {rule.column}</span>
-                    <time dateTime={rule.createdAt} className="rule-list-time">
-                      {addedAtLabel(rule)}
-                    </time>
-                    <span className="rule-list-arrow" aria-hidden="true">
-                      →
+                <div className="rule-row-content">
+                  <button
+                    className="rule-summary-trigger"
+                    type="button"
+                    onClick={() => setSelectedEntry(entry)}
+                  >
+                    <span className="rule-list-main">
+                      <strong>{rule.keyword}</strong>
+                      <span className="rule-list-category">{getCategoryLabel(entry)}</span>
                     </span>
-                  </span>
-                </button>
+                    <span className="rule-list-meta">
+                      <span className="rule-list-chip">Searches {rule.column}</span>
+                      <time dateTime={rule.createdAt} className="rule-list-time">
+                        {addedAtLabel(rule)}
+                      </time>
+                      <span className="rule-list-arrow" aria-hidden="true">
+                        →
+                      </span>
+                    </span>
+                  </button>
+                  {entry.source === 'user' && (
+                    <button
+                      className="button rule-row-delete"
+                      type="button"
+                      aria-label={`Delete rule ${rule.keyword}`}
+                      onClick={() => setDeleteTarget(entry)}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </li>
             );
           })}
@@ -246,8 +265,14 @@ export function RuleList({ rulesController }: { rulesController: RulesController
           rule={getRule(selectedEntry)}
           categories={categories}
           onSave={(next) => saveRule(getRule(selectedEntry), next)}
-          onDelete={() => actions.deleteRule(getRule(selectedEntry))}
           onClose={() => setSelectedEntry(null)}
+        />
+      )}
+      {deleteTarget && (
+        <RuleDeleteDialog
+          rule={getRule(deleteTarget)}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={deleteRule}
         />
       )}
       {deleteAllOpen && (

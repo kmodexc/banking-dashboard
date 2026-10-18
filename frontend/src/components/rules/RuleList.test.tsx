@@ -80,7 +80,7 @@ describe('rule summary list', () => {
     });
     expect(list.querySelector('li')).toHaveTextContent('NEW SHOP');
 
-    fireEvent.click(screen.getByRole('button', { name: /OLD SHOP/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^OLD SHOP/ }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Edit rule' })).toBeInTheDocument();
     expect(

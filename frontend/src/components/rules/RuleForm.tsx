@@ -18,7 +18,6 @@ export function RuleForm({
   categories,
   onAdd,
   onSave,
-  onDelete,
   onClose,
 }: {
   rule?: CategoryRule;
@@ -26,7 +25,6 @@ export function RuleForm({
   categories: RuleCategoryOption[];
   onAdd?: (rule: CategoryRule) => void;
   onSave?: (rule: CategoryRule) => string | null;
-  onDelete?: () => void;
   onClose?: () => void;
 }): ReactElement {
   const isExistingRule = rule !== undefined;
@@ -39,7 +37,6 @@ export function RuleForm({
     },
   );
   const [error, setError] = useState('');
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function updateDraft(next: Partial<CategoryRule>): void {
     setDraft((current) => ({ ...current, ...next }));
@@ -70,11 +67,6 @@ export function RuleForm({
 
     onAdd?.({ ...result.data, createdAt: new Date().toISOString() });
     setDraft({ keyword: '', category: categories[0]?.value ?? '', column: 'recipient' });
-  }
-
-  function confirmDelete(): void {
-    onDelete?.();
-    onClose?.();
   }
 
   const form = (
@@ -143,54 +135,16 @@ export function RuleForm({
         </div>
       </div>
       {error && <p className="notice category-auth-notice">{error}</p>}
-      {!confirmingDelete && (
-        <div className="category-row-actions rule-form-actions">
-          <button className="button primary" type="submit">
-            Save rule
+      <div className="category-row-actions rule-form-actions">
+        <button className="button primary" type="submit">
+          Save rule
+        </button>
+        {onClose && (
+          <button className="button secondary" type="button" onClick={onClose}>
+            Cancel
           </button>
-        </div>
-      )}
-      {isExistingRule && onDelete && (
-        <div className="rule-danger-zone">
-          {!confirmingDelete ? (
-            <>
-              <div className="rule-danger-copy">
-                <strong>Danger zone</strong>
-                <span>Deleting this rule cannot be undone.</span>
-              </div>
-              <button
-                className="button secondary danger-button"
-                type="button"
-                onClick={() => setConfirmingDelete(true)}
-              >
-                Delete rule
-              </button>
-            </>
-          ) : (
-            <div className="rule-delete-confirmation">
-              <p>
-                Delete <strong>{draft.keyword}</strong>? This cannot be undone.
-              </p>
-              <div className="category-row-actions rule-form-actions">
-                <button
-                  className="button secondary"
-                  type="button"
-                  onClick={() => setConfirmingDelete(false)}
-                >
-                  Keep rule
-                </button>
-                <button
-                  className="button secondary danger-button"
-                  type="button"
-                  onClick={confirmDelete}
-                >
-                  Confirm delete
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </form>
   );
 

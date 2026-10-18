@@ -511,6 +511,11 @@
   box-shadow: 0 5px 16px #17202a0d;
   transform: translateY(-1px);
 }
+.rule-row-content {
+  display: flex;
+  min-width: 0;
+  align-items: stretch;
+}
 .rule-summary-trigger {
   display: flex;
   width: 100%;
@@ -525,6 +530,22 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
+}
+.rule-row-delete {
+  align-self: center;
+  flex: 0 0 auto;
+  margin: 0 0.55rem 0 0;
+  padding: 0.45rem 0.55rem;
+  border-color: transparent;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.75rem;
+}
+.rule-row-delete:hover,
+.rule-row-delete:focus-visible {
+  border-color: #ffd1cc;
+  color: var(--danger);
+  background: #fff5f4;
 }
 .rule-summary-trigger:hover strong,
 .rule-summary-trigger:focus-visible strong {
@@ -633,48 +654,11 @@
 .rule-form-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 0.6rem;
   margin-top: 1.2rem;
   padding-top: 1rem;
   border-top: 1px solid var(--line);
-}
-.rule-danger-zone {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 0.4rem;
-  padding-top: 1rem;
-  border-top: 1px solid #ffd1cc;
-}
-.rule-danger-copy {
-  display: grid;
-  gap: 0.15rem;
-}
-.rule-danger-copy strong {
-  color: var(--danger);
-  font-size: 0.8rem;
-}
-.rule-danger-copy span {
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-.rule-delete-confirmation {
-  width: 100%;
-  padding: 0.85rem 1rem;
-  border: 1px solid #ffd1cc;
-  border-radius: 10px;
-  background: #fff5f4;
-}
-.rule-delete-confirmation > p {
-  margin: 0;
-  color: var(--danger);
-}
-.rule-delete-confirmation .rule-form-actions {
-  margin-top: 0.8rem;
-  padding-top: 0.8rem;
-  border-top-color: #ffd1cc;
 }
 @media (max-width: 850px) {
   .modal-backdrop {
@@ -745,11 +729,13 @@
   .rule-form-created {
     text-align: left;
   }
-  .rule-danger-zone {
+  .rule-row-content {
     align-items: stretch;
     flex-direction: column;
   }
-  .rule-danger-zone .button {
+  .rule-row-delete {
+    align-self: stretch;
+    margin: 0 0.55rem 0.55rem;
     width: 100%;
   }
 }

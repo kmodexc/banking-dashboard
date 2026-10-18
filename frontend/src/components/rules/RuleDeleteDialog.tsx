@@ -1,38 +1,53 @@
 import type { ReactElement } from 'react';
+import type { CategoryRule } from '../../types';
 
 export function RuleDeleteDialog({
+  rule,
   confirmation,
   onConfirmationChange,
   onCancel,
   onConfirm,
 }: {
-  confirmation: string;
-  onConfirmationChange: (value: string) => void;
+  rule?: CategoryRule;
+  confirmation?: string;
+  onConfirmationChange?: (value: string) => void;
   onCancel: () => void;
   onConfirm: () => void;
 }): ReactElement {
+  const isSingleRule = rule !== undefined;
   return (
     <div className="modal-backdrop">
       <section
         className="details-modal rule-confirmation"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="remove-all-rules-title"
+        aria-labelledby={isSingleRule ? 'delete-rule-title' : 'remove-all-rules-title'}
       >
-        <h2 id="remove-all-rules-title">Remove all rules?</h2>
-        <p>
-          This removes all personal rules from this browser and, when enabled, from the private
-          server copy.
-        </p>
-        <label htmlFor="remove-all-rules-confirmation">
-          Type <code>delete</code> to confirm
-          <input
-            id="remove-all-rules-confirmation"
-            value={confirmation}
-            onChange={(event) => onConfirmationChange(event.currentTarget.value)}
-            autoFocus
-          />
-        </label>
+        {isSingleRule ? (
+          <>
+            <h2 id="delete-rule-title">Delete rule?</h2>
+            <p>
+              Delete <strong>{rule.keyword}</strong>? This cannot be undone.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 id="remove-all-rules-title">Remove all rules?</h2>
+            <p>
+              This removes all personal rules from this browser and, when enabled, from the private
+              server copy.
+            </p>
+            <label htmlFor="remove-all-rules-confirmation">
+              Type <code>delete</code> to confirm
+              <input
+                id="remove-all-rules-confirmation"
+                value={confirmation ?? ''}
+                onChange={(event) => onConfirmationChange?.(event.currentTarget.value)}
+                autoFocus
+              />
+            </label>
+          </>
+        )}
         <div className="category-actions">
           <button className="button secondary" type="button" onClick={onCancel}>
             Cancel
@@ -40,10 +55,10 @@ export function RuleDeleteDialog({
           <button
             className="button remove-all-rules-button"
             type="button"
-            disabled={confirmation !== 'delete'}
+            disabled={!isSingleRule && confirmation !== 'delete'}
             onClick={onConfirm}
           >
-            OK
+            {isSingleRule ? 'Delete rule' : 'OK'}
           </button>
         </div>
       </section>
