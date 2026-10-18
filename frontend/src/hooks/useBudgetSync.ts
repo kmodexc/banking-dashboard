@@ -27,6 +27,7 @@ export function useBudgetSync(
   budgetPlan: BudgetPlan;
   budgetPreferences: BudgetPreferences;
   budgetSyncStatus: string;
+  serverHasBudgets: boolean | null;
   deleteServerBudgets: () => Promise<void>;
   updateBudgetPlan: (next: BudgetPlan) => void;
   updateBudgetPreferences: (next: BudgetPreferences) => void;
@@ -37,6 +38,7 @@ export function useBudgetSync(
     preferences: BudgetPreferences;
   }>({ userId: null, preferences: DEFAULT_BUDGET_PREFERENCES });
   const [budgetSyncStatus, setBudgetSyncStatus] = useState('');
+  const [serverHasBudgets, setServerHasBudgets] = useState<boolean | null>(null);
   const previousUserId = useRef<string | null>(null);
   const requestVersion = useRef(0);
   const budgetPlanRef = useRef(budgetPlan);
@@ -59,6 +61,7 @@ export function useBudgetSync(
     setBudgetSyncStatus('Syncing budgets…');
     try {
       await replaceStoredBudgets(config, token, next);
+      setServerHasBudgets(hasBudgets(next));
       setBudgetSyncStatus('Budgets synced privately.');
     } catch (error: unknown) {
       setBudgetSyncStatus(`Could not sync budgets: ${errorMessage(error)}`);
@@ -70,6 +73,7 @@ export function useBudgetSync(
     const isNewLogin = Boolean(currentUserId && previousUserId.current !== currentUserId);
     previousUserId.current = currentUserId;
     if (!auth.token || !budgetPreferencesRef.current.storePrivateBudgets) {
+      setServerHasBudgets(null);
       return () => undefined;
     }
     const version = requestVersion.current + 1;
@@ -79,6 +83,7 @@ export function useBudgetSync(
     void getStoredBudgets(config, token)
       .then((serverPlan) => {
         if (!active || requestVersion.current !== version) return;
+        setServerHasBudgets(Boolean(serverPlan));
         if (serverPlan) {
           setBudgetPlan(serverPlan);
           saveBudgetPlan(serverPlan);
@@ -125,6 +130,7 @@ export function useBudgetSync(
     setBudgetSyncStatus('Deleting private server budgets…');
     try {
       await deleteStoredBudgets(config, token);
+      setServerHasBudgets(false);
       setBudgetSyncStatus('Private server budgets deleted.');
     } catch (error: unknown) {
       setBudgetSyncStatus(`Could not delete private server budgets: ${errorMessage(error)}`);
@@ -139,6 +145,7 @@ export function useBudgetSync(
       : !budgetPreferences.storePrivateBudgets
         ? 'Budgets remain local to this browser.'
         : budgetSyncStatus,
+    serverHasBudgets,
     deleteServerBudgets,
     updateBudgetPlan,
     updateBudgetPreferences,
