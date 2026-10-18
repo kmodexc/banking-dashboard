@@ -35,38 +35,28 @@ export function RuleManager({
 
   return (
     <>
+      <details className="rule-management-tools">
+        <summary>Manage rules</summary>
+        <div className="rule-management-content">
+          <RuleManagerToolbar
+            fileInput={manager.fileInput}
+            filter={manager.filter}
+            canRemoveAll={Boolean(rulesToExport.length)}
+            onFilterChange={manager.setFilter}
+            onExport={manager.exportRules}
+            onImport={(event) => void manager.importRules(event)}
+            onRemoveAll={manager.openDeleteAllConfirmation}
+          />
+          {manager.message && <p className="notice category-auth-notice">{manager.message}</p>}
+        </div>
+      </details>
       <RuleSummaryList
         rules={manager.visibleRules}
         categories={categories}
         title="Categorization rules"
-        description="All rules are personal and can be changed or deleted."
-        headerMeta={
-          <span className="muted small">
-            Showing {manager.visibleRules.length} of {rules.length}
-          </span>
-        }
-        toolbar={
-          <>
-            <RuleManagerToolbar
-              fileInput={manager.fileInput}
-              filter={manager.filter}
-              canRemoveAll={Boolean(rulesToExport.length)}
-              onFilterChange={manager.setFilter}
-              onExport={manager.exportRules}
-              onImport={(event) => void manager.importRules(event)}
-              onRemoveAll={manager.openDeleteAllConfirmation}
-            />
-            {manager.message && <p className="notice category-auth-notice">{manager.message}</p>}
-          </>
-        }
         listLabel="Categorization rule list"
         emptyMessage="No rules match this filter."
-        editingKey={manager.editingKey}
-        draft={manager.draft}
-        onStartEditing={manager.startEditing}
-        onDraftChange={manager.setDraft}
         onSave={(previous, next) => manager.saveEditing(previous, next)}
-        onCancel={manager.cancelEditing}
         onDelete={manager.deleteRule}
       />
       {manager.deleteAllOpen && (

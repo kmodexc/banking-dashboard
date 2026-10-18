@@ -20,8 +20,6 @@ export function useRuleManager({
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState('');
-  const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [draft, setDraft] = useState<CategoryRule | null>(null);
   const [message, setMessage] = useState('');
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
@@ -38,25 +36,11 @@ export function useRuleManager({
     [normalizedFilter, rules],
   );
 
-  function startEditing(entry: ManagedRule): void {
-    setEditingKey(ruleKey(entry.rule));
-    setDraft({ ...entry.rule });
-    setMessage('');
-  }
-
-  function cancelEditing(): void {
-    setEditingKey(null);
-    setDraft(null);
-    setMessage('');
-  }
-
-  function saveEditing(previous: CategoryRule, nextDraft?: CategoryRule): string | null {
-    const draftToSave = nextDraft ?? draft;
-    if (!draftToSave) return null;
+  function saveEditing(previous: CategoryRule, nextRule: CategoryRule): string | null {
     const result = CategoryRuleSchema.safeParse({
-      ...draftToSave,
-      keyword: draftToSave.keyword.trim(),
-      category: draftToSave.category.trim(),
+      ...nextRule,
+      keyword: nextRule.keyword.trim(),
+      category: nextRule.category.trim(),
     });
     if (!result.success) {
       const message = 'Rules need a keyword, category, and valid search column.';
@@ -74,13 +58,12 @@ export function useRuleManager({
       return message;
     }
     onUpdate(previous, result.data);
-    cancelEditing();
+    setMessage('');
     return null;
   }
 
   function deleteRule(rule: CategoryRule): void {
     onDelete(rule);
-    if (editingKey === ruleKey(rule)) cancelEditing();
   }
 
   function exportRules(): void {
@@ -128,15 +111,10 @@ export function useRuleManager({
     filter,
     setFilter,
     visibleRules,
-    editingKey,
-    draft,
-    setDraft,
     message,
     deleteAllOpen,
     deleteConfirmation,
     setDeleteConfirmation,
-    startEditing,
-    cancelEditing,
     saveEditing,
     deleteRule,
     exportRules,

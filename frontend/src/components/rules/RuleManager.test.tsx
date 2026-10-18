@@ -23,7 +23,7 @@ const rules: ManagedRule[] = [
 ];
 
 describe('rule manager', () => {
-  it('shows personal rules with edit and delete actions', () => {
+  it('shows personal rules in the shared summary panel', () => {
     render(
       <RuleManager
         rules={rules}
@@ -36,8 +36,10 @@ describe('rule manager', () => {
       />,
     );
 
-    expect(screen.getAllByRole('button', { name: 'Edit' })).toHaveLength(3);
-    expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(3);
+    expect(screen.getByRole('heading', { name: 'Categorization rules' })).toBeInTheDocument();
+    expect(screen.getByText('Manage rules')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
   });
 
   it('keeps the supplied newest-first order in the rule list', () => {
@@ -69,40 +71,6 @@ describe('rule manager', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent('NEW SHOP');
     expect(rows[1]).toHaveTextContent('OLD SHOP');
-  });
-
-  it('edits and deletes a user rule', () => {
-    const onUpdate = vi.fn();
-    const onDelete = vi.fn();
-    render(
-      <RuleManager
-        rules={[rules[0]!]}
-        categories={[
-          { value: 'groceries', label: 'groceries' },
-          { value: 'restaurant', label: 'restaurant' },
-        ]}
-        rulesToExport={[userRule]}
-        onImport={vi.fn()}
-        onUpdate={onUpdate}
-        onDelete={onDelete}
-        onRemoveAll={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Edit rule keyword' }), {
-      target: { value: 'SPC.BAKERY' },
-    });
-    fireEvent.click(screen.getByRole('radio', { name: 'restaurant' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Save rule' }));
-    expect(onUpdate).toHaveBeenCalledWith(userRule, {
-      keyword: 'SPC.BAKERY',
-      category: 'restaurant',
-      column: 'recipient',
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(onDelete).toHaveBeenCalledWith(userRule);
   });
 
   it('edits and deletes a rule from its details modal', () => {
@@ -159,6 +127,7 @@ describe('rule manager', () => {
       'rules.json',
       { type: 'application/json' },
     );
+    fireEvent.click(screen.getByText('Manage rules'));
     fireEvent.change(screen.getByLabelText('Import rules'), { target: { files: [file] } });
 
     await waitFor(() => {
@@ -190,6 +159,7 @@ describe('rule manager', () => {
       />,
     );
 
+    fireEvent.click(screen.getByText('Manage rules'));
     fireEvent.click(screen.getByRole('button', { name: 'Export rules' }));
 
     expect(createObjectURL).toHaveBeenCalledOnce();
@@ -216,6 +186,7 @@ describe('rule manager', () => {
       />,
     );
 
+    fireEvent.click(screen.getByText('Manage rules'));
     fireEvent.click(screen.getByRole('button', { name: 'Remove all rules' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'OK' })).toBeDisabled();
