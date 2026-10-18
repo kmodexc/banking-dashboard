@@ -208,8 +208,8 @@ describe('dashboard UI', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
 
     expect(screen.getByRole('heading', { name: 'Account and data' })).toBeInTheDocument();
-    expect(screen.getByText('0 loaded')).toBeInTheDocument();
-    expect(screen.getByText('Never uploaded')).toBeInTheDocument();
+    expect(screen.getByText('0 imported transactions')).toBeInTheDocument();
+    expect(screen.getByText('0 transactions — never uploaded')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Delete private budgets' })).toBeDisabled();
     expect(
       screen.getByRole('button', { name: 'Delete private categories and rules' }),

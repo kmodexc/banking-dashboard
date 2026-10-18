@@ -1,32 +1,26 @@
 import type { ReactElement } from 'react';
-import type { BudgetPlan } from '../../data/budgets';
+import { summarizeBudgetPlan, type BudgetPlan, type BudgetPlanSummary } from '../../data/budgets';
 import type { BudgetPreferences } from '../../data/preferences';
 import type { AuthSnapshot, RulePreferences } from '../../types';
 
-function budgetCounts(budgets: BudgetPlan): { categories: number; overrides: number } {
-  const categories = new Set([
-    ...Object.keys(budgets.defaults),
-    ...Object.values(budgets.monthly).flatMap((month) => Object.keys(month)),
-  ]);
-  return {
-    categories: categories.size,
-    overrides: Object.values(budgets.monthly).reduce(
-      (total, month) => total + Object.keys(month).length,
-      0,
-    ),
-  };
+function syncAvailability(auth: AuthSnapshot, enabled: boolean): string | null {
+  if (!auth.token) return 'Not synchronized — sign in required';
+  if (!enabled) return 'Not synchronized — disabled in Account settings';
+  return null;
 }
 
-function serverStorageLabel(
-  enabled: boolean,
-  auth: AuthSnapshot,
-  count: number | null,
-  emptyLabel: string,
-): string {
-  if (!auth.token) return 'Sign in required';
-  if (!enabled) return 'Synchronization disabled';
-  if (count === null) return 'Checking…';
-  return count > 0 ? `${count} stored privately` : emptyLabel;
+function countLabel(count: number, singular: string, plural: string = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function budgetSummaryLines(summary: BudgetPlanSummary): ReactElement {
+  return (
+    <div className="account-table-summary">
+      <span>{countLabel(summary.categories, 'budget category', 'budget categories')}</span>
+      <span>{countLabel(summary.monthlyOverrides, 'monthly override')}</span>
+      <span>{countLabel(summary.months, 'month with overrides', 'months with overrides')}</span>
+    </div>
+  );
 }
 
 export function StorageOverview({
@@ -35,6 +29,7 @@ export function StorageOverview({
   budgets,
   budgetPreferences,
   serverHasBudgets,
+  serverBudgetSummary,
   localRuleCount,
   localCategoryCount,
   rulePreferences,
@@ -46,14 +41,16 @@ export function StorageOverview({
   budgets: BudgetPlan;
   budgetPreferences: BudgetPreferences;
   serverHasBudgets: boolean | null;
+  serverBudgetSummary: BudgetPlanSummary | null;
   localRuleCount: number;
   localCategoryCount: number;
   rulePreferences: RulePreferences;
   serverRuleCount: number | null;
   serverCategoryCount: number | null;
 }): ReactElement {
-  const budgetTotal = budgetCounts(budgets);
-  const canManageAccount = Boolean(auth.token);
+  const localBudgetSummary = summarizeBudgetPlan(budgets);
+  const unavailableBudgetServer = syncAvailability(auth, budgetPreferences.storePrivateBudgets);
+  const unavailableRulesServer = syncAvailability(auth, rulePreferences.storePrivateRules);
 
   return (
     <article className="panel account-storage-panel">
@@ -78,42 +75,40 @@ export function StorageOverview({
           <tbody>
             <tr>
               <th scope="row">Imported transactions</th>
-              <td>{transactionCount} loaded</td>
-              <td>Never uploaded</td>
+              <td>{countLabel(transactionCount, 'imported transaction')}</td>
+              <td>0 transactions — never uploaded</td>
             </tr>
             <tr>
               <th scope="row">Budgets</th>
+              <td>{budgetSummaryLines(localBudgetSummary)}</td>
               <td>
-                {budgetTotal.categories} default categories · {budgetTotal.overrides} monthly
-                overrides
-              </td>
-              <td>
-                {canManageAccount && budgetPreferences.storePrivateBudgets && serverHasBudgets
-                  ? 'Budgets stored privately'
-                  : serverStorageLabel(
-                      budgetPreferences.storePrivateBudgets,
-                      auth,
-                      serverHasBudgets === true ? 1 : serverHasBudgets === false ? 0 : null,
-                      'No budgets stored',
-                    )}
+                {unavailableBudgetServer
+                  ? unavailableBudgetServer
+                  : serverHasBudgets === null
+                    ? 'Checking…'
+                    : serverBudgetSummary
+                      ? budgetSummaryLines(serverBudgetSummary)
+                      : '0 budget categories · 0 monthly overrides · no plan stored'}
               </td>
             </tr>
             <tr>
               <th scope="row">Categories and rules</th>
               <td>
-                {localCategoryCount} categories · {localRuleCount} rules
+                <div className="account-table-summary">
+                  <span>{countLabel(localCategoryCount, 'category', 'categories')}</span>
+                  <span>{countLabel(localRuleCount, 'rule')}</span>
+                </div>
               </td>
               <td>
-                {serverStorageLabel(
-                  rulePreferences.storePrivateRules,
-                  auth,
-                  serverRuleCount,
-                  'No private rules stored',
-                )}
-                {serverCategoryCount !== null && rulePreferences.storePrivateRules && (
-                  <small className="account-table-detail">
-                    {serverCategoryCount} categories stored
-                  </small>
+                {unavailableRulesServer ? (
+                  unavailableRulesServer
+                ) : serverRuleCount === null || serverCategoryCount === null ? (
+                  'Checking…'
+                ) : (
+                  <div className="account-table-summary">
+                    <span>{countLabel(serverCategoryCount, 'private category')}</span>
+                    <span>{countLabel(serverRuleCount, 'private rule')}</span>
+                  </div>
                 )}
               </td>
             </tr>

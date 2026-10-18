@@ -11,15 +11,22 @@ export function Account({
   budgets,
   budgetPreferences,
   budgetSyncStatus,
+  budgetLastSyncedAt,
+  budgetHasUnsyncedChanges,
   serverHasBudgets,
+  serverBudgetSummary,
   localRuleCount,
   localCategoryCount,
   rulePreferences,
   ruleSyncStatus,
+  ruleLastSyncedAt,
+  ruleHasUnsyncedChanges,
   serverRuleCount,
   serverCategoryCount,
   onBudgetPreferencesChange,
+  onSyncBudgets,
   onRulePreferencesChange,
+  onSyncRules,
   onDeleteServerBudgets,
   onDeleteServerRules,
   onDeleteCommunityRules,
@@ -55,6 +62,7 @@ export function Account({
         budgets={budgets}
         budgetPreferences={budgetPreferences}
         serverHasBudgets={serverHasBudgets}
+        serverBudgetSummary={serverBudgetSummary}
         localRuleCount={localRuleCount}
         localCategoryCount={localCategoryCount}
         rulePreferences={rulePreferences}
@@ -67,8 +75,14 @@ export function Account({
         rulePreferences={rulePreferences}
         budgetSyncStatus={budgetSyncStatus}
         ruleSyncStatus={ruleSyncStatus}
+        budgetLastSyncedAt={budgetLastSyncedAt}
+        budgetHasUnsyncedChanges={budgetHasUnsyncedChanges}
+        ruleLastSyncedAt={ruleLastSyncedAt}
+        ruleHasUnsyncedChanges={ruleHasUnsyncedChanges}
         onBudgetPreferencesChange={onBudgetPreferencesChange}
+        onSyncBudgets={onSyncBudgets}
         onRulePreferencesChange={onRulePreferencesChange}
+        onSyncRules={onSyncRules}
       />
       <DangerZone
         canManageAccount={canManageAccount}

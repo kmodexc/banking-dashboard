@@ -33,6 +33,10 @@ export interface FinanceWorkspace {
   budgetPreferences: ReturnType<typeof useBudgetSync>['budgetPreferences'];
   budgetSyncStatus: string;
   serverHasBudgets: boolean | null;
+  serverBudgetSummary: ReturnType<typeof useBudgetSync>['serverBudgetSummary'];
+  budgetLastSyncedAt: ReturnType<typeof useBudgetSync>['budgetLastSyncedAt'];
+  budgetHasUnsyncedChanges: ReturnType<typeof useBudgetSync>['budgetHasUnsyncedChanges'];
+  syncBudgetsNow: ReturnType<typeof useBudgetSync>['syncBudgetsNow'];
   deleteServerBudgets: () => Promise<void>;
   updateBudgetPlan: (next: BudgetPlan) => void;
   updateBudgetPreferences: ReturnType<typeof useBudgetSync>['updateBudgetPreferences'];
@@ -62,6 +66,9 @@ export interface FinanceWorkspace {
   replaceRules: ReturnType<typeof useRuleSync>['replaceRules'];
   rulePreferences: ReturnType<typeof useRuleSync>['rulePreferences'];
   ruleSyncStatus: string;
+  ruleLastSyncedAt: ReturnType<typeof useRuleSync>['ruleLastSyncedAt'];
+  ruleHasUnsyncedChanges: ReturnType<typeof useRuleSync>['ruleHasUnsyncedChanges'];
+  syncRulesNow: () => Promise<void>;
   serverCategoryCount: number | null;
   serverRuleCount: number | null;
   updateRulePreferences: ReturnType<typeof useRuleSync>['updateRulePreferences'];
@@ -99,6 +106,9 @@ export function useFinanceWorkspace(
     replaceRules,
     rulePreferences,
     ruleSyncStatus,
+    ruleLastSyncedAt,
+    ruleHasUnsyncedChanges,
+    syncRulesNow: syncRulesNowFromHook,
     updateRulePreferences,
     updateUserRule,
     userRules,
@@ -109,6 +119,10 @@ export function useFinanceWorkspace(
     budgetSyncStatus,
     deleteServerBudgets,
     serverHasBudgets,
+    serverBudgetSummary,
+    budgetLastSyncedAt,
+    budgetHasUnsyncedChanges,
+    syncBudgetsNow,
     updateBudgetPlan,
     updateBudgetPreferences,
   } = budgetSync;
@@ -245,6 +259,10 @@ export function useFinanceWorkspace(
     });
   }
 
+  async function syncRulesNow(): Promise<void> {
+    await syncRulesNowFromHook(userCategoryState);
+  }
+
   useEffect(() => {
     if (!auth.token || privateCategories === undefined) return;
     if (privateCategories) {
@@ -302,10 +320,17 @@ export function useFinanceWorkspace(
     replaceRules,
     rulePreferences,
     ruleSyncStatus,
+    ruleLastSyncedAt,
+    ruleHasUnsyncedChanges,
+    syncRulesNow,
     serverCategoryCount,
     serverRuleCount,
     updateRulePreferences,
     updateUserRule,
     serverHasBudgets,
+    serverBudgetSummary,
+    budgetLastSyncedAt,
+    budgetHasUnsyncedChanges,
+    syncBudgetsNow,
   };
 }

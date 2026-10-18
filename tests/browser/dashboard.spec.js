@@ -72,8 +72,8 @@ test('imports a CSV and renders dashboard data in the browser', async ({ page })
   await page.locator('[data-tab="categories"]').click();
   await expect(page.locator('#categories-tab')).toContainText('Categories');
   await expect(page.locator('#categories-tab button', { hasText: 'Add category' })).toBeEnabled();
-  await expect(page.locator('#categories-tab')).toContainText(
-    'Sign in above to enable private online storage',
+  await expect(page.locator('#categories-tab')).not.toContainText(
+    'Private category and rule storage',
   );
 });
 
@@ -152,8 +152,8 @@ test('shows a clear warning when automatic rule synchronization fails', async ({
   await page.locator('#rule-keyword').fill('UNKNOWN SHOP');
   await page.locator('#rule-category').fill('items');
   await page.locator('#rule-form button[type=submit]').click();
-  await page.locator('[data-tab="categories"]').click();
-  await page.getByRole('button', { name: 'Sync privately now' }).click();
+  await page.locator('[data-tab="account"]').click();
+  await page.getByRole('button', { name: 'Sync categories and rules now' }).click();
 
   await expect(page.locator('#rule-sync-error')).toContainText('Rule synchronization warning:');
   await expect(page.locator('#rule-sync-error')).toContainText('Could not sync rules');

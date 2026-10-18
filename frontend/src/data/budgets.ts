@@ -21,10 +21,31 @@ export interface BudgetPlan {
   monthly: Record<string, BudgetMap>;
 }
 
+export interface BudgetPlanSummary {
+  categories: number;
+  monthlyOverrides: number;
+  months: number;
+}
+
 export const EMPTY_BUDGET_PLAN: BudgetPlan = {
   defaults: {},
   monthly: {},
 };
+
+export function summarizeBudgetPlan(plan: BudgetPlan): BudgetPlanSummary {
+  const categories = new Set([
+    ...Object.keys(plan.defaults),
+    ...Object.values(plan.monthly).flatMap((month) => Object.keys(month)),
+  ]);
+  return {
+    categories: categories.size,
+    monthlyOverrides: Object.values(plan.monthly).reduce(
+      (total, month) => total + Object.keys(month).length,
+      0,
+    ),
+    months: Object.keys(plan.monthly).length,
+  };
+}
 
 function normalizeMap(map: BudgetMap): BudgetMap {
   return Object.fromEntries(

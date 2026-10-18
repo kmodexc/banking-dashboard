@@ -2,22 +2,52 @@ import type { ReactElement } from 'react';
 import type { BudgetPreferences } from '../../data/preferences';
 import type { RulePreferences } from '../../types';
 
+function syncTime(timestamp: string | null): string {
+  if (!timestamp) return 'No successful sync recorded yet.';
+  return `Last successful sync: ${new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(timestamp))}`;
+}
+
+function uploadState(
+  canManageAccount: boolean,
+  canSync: boolean,
+  hasUnsyncedChanges: boolean,
+): string {
+  if (!canManageAccount) return 'Sign in to determine upload status.';
+  if (!canSync) return 'Synchronization is disabled; changes stay in this browser.';
+  return hasUnsyncedChanges ? 'Changes waiting to upload.' : 'Everything is uploaded.';
+}
+
 export function SyncPreferences({
   canManageAccount,
   budgetPreferences,
   rulePreferences,
   budgetSyncStatus,
   ruleSyncStatus,
+  budgetLastSyncedAt,
+  budgetHasUnsyncedChanges,
+  ruleLastSyncedAt,
+  ruleHasUnsyncedChanges,
   onBudgetPreferencesChange,
+  onSyncBudgets,
   onRulePreferencesChange,
+  onSyncRules,
 }: {
   canManageAccount: boolean;
   budgetPreferences: BudgetPreferences;
   rulePreferences: RulePreferences;
   budgetSyncStatus: string;
   ruleSyncStatus: string;
+  budgetLastSyncedAt: string | null;
+  budgetHasUnsyncedChanges: boolean;
+  ruleLastSyncedAt: string | null;
+  ruleHasUnsyncedChanges: boolean;
   onBudgetPreferencesChange: (next: BudgetPreferences) => void;
+  onSyncBudgets: () => void;
   onRulePreferencesChange: (next: RulePreferences) => void;
+  onSyncRules: () => void;
 }): ReactElement {
   return (
     <article className="panel account-sync-panel">
@@ -102,14 +132,53 @@ export function SyncPreferences({
         </p>
       )}
       <div className="account-status-grid">
-        <p className="account-status" role="status">
-          <strong>Budget status</strong>
+        <div className="account-status" role="status">
+          <div className="account-status-heading">
+            <strong>Budget synchronization</strong>
+            <button
+              className="button secondary"
+              type="button"
+              disabled={!canManageAccount || !budgetPreferences.storePrivateBudgets}
+              onClick={onSyncBudgets}
+            >
+              Sync budgets now
+            </button>
+          </div>
           <span>{budgetSyncStatus}</span>
-        </p>
-        <p className="account-status" role="status">
-          <strong>Category and rule status</strong>
+          <small>{syncTime(budgetLastSyncedAt)}</small>
+          <small>
+            {uploadState(
+              canManageAccount,
+              budgetPreferences.storePrivateBudgets,
+              budgetHasUnsyncedChanges,
+            )}
+          </small>
+        </div>
+        <div className="account-status" role="status">
+          <div className="account-status-heading">
+            <strong>Category and rule synchronization</strong>
+            <button
+              className="button secondary"
+              type="button"
+              disabled={
+                !canManageAccount ||
+                (!rulePreferences.storePrivateRules && !rulePreferences.contributeRules)
+              }
+              onClick={onSyncRules}
+            >
+              Sync categories and rules now
+            </button>
+          </div>
           <span>{ruleSyncStatus || 'No synchronization activity yet.'}</span>
-        </p>
+          <small>{syncTime(ruleLastSyncedAt)}</small>
+          <small>
+            {uploadState(
+              canManageAccount,
+              rulePreferences.storePrivateRules || rulePreferences.contributeRules,
+              ruleHasUnsyncedChanges,
+            )}
+          </small>
+        </div>
       </div>
     </article>
   );

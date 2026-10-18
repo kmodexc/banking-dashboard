@@ -33,6 +33,8 @@ export function useRuleSync(
   privateCategories: UserCategoryState | null | undefined;
   serverCategoryCount: number | null;
   serverRuleCount: number | null;
+  ruleLastSyncedAt: string | null;
+  ruleHasUnsyncedChanges: boolean;
   localRules: CategoryRule[];
   rulePreferences: RulePreferences;
   ruleSyncStatus: string;
@@ -48,6 +50,7 @@ export function useRuleSync(
     categoriesOrPreferences?: UserCategoryState | RulePreferences,
     preferences?: RulePreferences,
   ) => Promise<void>;
+  syncRulesNow: (categories?: UserCategoryState) => Promise<void>;
   updateRulePreferences: (preferences: RulePreferences) => void;
   updateUserRule: (previous: CategoryRule, next: CategoryRule) => void;
 } {
@@ -63,6 +66,8 @@ export function useRuleSync(
   const [serverRules, setServerRules] = useState<CategoryRule[]>([]);
   const [serverRuleCount, setServerRuleCount] = useState<number | null>(null);
   const [serverCategoryCount, setServerCategoryCount] = useState<number | null>(null);
+  const [ruleLastSyncedAt, setRuleLastSyncedAt] = useState<string | null>(null);
+  const [ruleHasUnsyncedChanges, setRuleHasUnsyncedChanges] = useState(false);
   const [serverRulesUserId, setServerRulesUserId] = useState<string | null>(null);
   const [communityRules, setCommunityRules] = useState<CategoryRule[]>([]);
   const [ruleSyncStatus, setRuleSyncStatus] = useState('');
@@ -119,6 +124,7 @@ export function useRuleSync(
         return;
       }
       const uniqueRules = deduplicateRules(nextRules);
+      setRuleHasUnsyncedChanges(true);
       setRuleSyncStatus('Syncing rules…');
       try {
         if (activePreferences.storePrivateRules) {
@@ -135,6 +141,8 @@ export function useRuleSync(
           );
           await contributeRules(config, auth.token, eligibleRules);
         }
+        setRuleHasUnsyncedChanges(false);
+        setRuleLastSyncedAt(new Date().toISOString());
         setRuleSyncStatus('Rules synced. Custom-category rules stayed private.');
       } catch (error: unknown) {
         setRuleSyncStatus(`Could not sync rules: ${errorMessage(error)}`);
@@ -164,6 +172,8 @@ export function useRuleSync(
         setServerCategoryCount(
           storePrivateRules ? (result.categories?.categories.length ?? 0) : null,
         );
+        setRuleHasUnsyncedChanges(false);
+        setRuleLastSyncedAt(new Date().toISOString());
         setRuleSyncStatus('Shared rules loaded.');
         if (isNewLogin && localRules.length && (storePrivateRules || contributeRulesPreference)) {
           void replaceRules(localRules);
@@ -192,6 +202,10 @@ export function useRuleSync(
     if (auth.token && (rulePreferences.storePrivateRules || rulePreferences.contributeRules)) {
       void replaceRules(uniqueRules);
     }
+  }
+
+  async function syncRulesNow(categories?: UserCategoryState): Promise<void> {
+    await replaceRules(userRules, categories);
   }
 
   function updateRulePreferences(next: RulePreferences): void {
@@ -243,6 +257,8 @@ export function useRuleSync(
       setServerRuleCount(0);
       setPrivateCategories(undefined);
       setServerCategoryCount(0);
+      setRuleLastSyncedAt(null);
+      setRuleHasUnsyncedChanges(localRules.length > 0);
       setRuleSyncStatus('Private server rules deleted.');
     } catch (error: unknown) {
       setRuleSyncStatus(`Could not delete private server rules: ${errorMessage(error)}`);
@@ -284,7 +300,10 @@ export function useRuleSync(
     removePrivateServerRules,
     replaceLocalRules,
     replaceRules,
+    syncRulesNow,
     updateRulePreferences,
     updateUserRule,
+    ruleLastSyncedAt,
+    ruleHasUnsyncedChanges,
   };
 }

@@ -88,6 +88,13 @@
   color: var(--muted);
   font-size: 0.75rem;
 }
+.account-table-summary {
+  display: grid;
+  gap: 0.2rem;
+}
+.account-table-summary span {
+  display: block;
+}
 .account-preferences {
   display: grid;
   gap: 0.85rem;
@@ -122,8 +129,23 @@
   background: var(--wash);
   font-size: 0.82rem;
 }
+.account-status-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+.account-status-heading .button {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.72rem;
+}
 .account-status span {
   color: var(--muted);
+}
+.account-status small {
+  color: var(--muted);
+  font-size: 0.75rem;
 }
 .account-danger-panel {
   border-color: #f1cbc7;
@@ -164,5 +186,8 @@
   }
   .account-status-grid {
     grid-template-columns: 1fr;
+  }
+  .account-status-heading {
+    flex-direction: column;
   }
 }

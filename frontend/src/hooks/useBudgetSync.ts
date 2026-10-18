@@ -7,7 +7,13 @@ import {
   saveBudgetPreferences,
   type BudgetPreferences,
 } from '../data/preferences';
-import { loadBudgetPlan, saveBudgetPlan, type BudgetPlan } from '../data/budgets';
+import {
+  loadBudgetPlan,
+  saveBudgetPlan,
+  summarizeBudgetPlan,
+  type BudgetPlan,
+  type BudgetPlanSummary,
+} from '../data/budgets';
 import type { AuthSnapshot } from '../types';
 
 const config = getAppConfig();
@@ -28,6 +34,10 @@ export function useBudgetSync(
   budgetPreferences: BudgetPreferences;
   budgetSyncStatus: string;
   serverHasBudgets: boolean | null;
+  serverBudgetSummary: BudgetPlanSummary | null;
+  budgetLastSyncedAt: string | null;
+  budgetHasUnsyncedChanges: boolean;
+  syncBudgetsNow: () => Promise<void>;
   deleteServerBudgets: () => Promise<void>;
   updateBudgetPlan: (next: BudgetPlan) => void;
   updateBudgetPreferences: (next: BudgetPreferences) => void;
@@ -39,6 +49,11 @@ export function useBudgetSync(
   }>({ userId: null, preferences: DEFAULT_BUDGET_PREFERENCES });
   const [budgetSyncStatus, setBudgetSyncStatus] = useState('');
   const [serverHasBudgets, setServerHasBudgets] = useState<boolean | null>(null);
+  const [serverBudgetSummary, setServerBudgetSummary] = useState<BudgetPlanSummary | null>(null);
+  const [budgetLastSyncedAt, setBudgetLastSyncedAt] = useState<string | null>(null);
+  const [budgetHasUnsyncedChanges, setBudgetHasUnsyncedChanges] = useState(() =>
+    hasBudgets(budgetPlan),
+  );
   const previousUserId = useRef<string | null>(null);
   const requestVersion = useRef(0);
   const budgetPlanRef = useRef(budgetPlan);
@@ -58,10 +73,14 @@ export function useBudgetSync(
   }, [budgetPreferences]);
 
   const syncToServer = useCallback(async (next: BudgetPlan, token: string): Promise<void> => {
+    setBudgetHasUnsyncedChanges(true);
     setBudgetSyncStatus('Syncing budgets…');
     try {
       await replaceStoredBudgets(config, token, next);
       setServerHasBudgets(hasBudgets(next));
+      setServerBudgetSummary(summarizeBudgetPlan(next));
+      setBudgetHasUnsyncedChanges(false);
+      setBudgetLastSyncedAt(new Date().toISOString());
       setBudgetSyncStatus('Budgets synced privately.');
     } catch (error: unknown) {
       setBudgetSyncStatus(`Could not sync budgets: ${errorMessage(error)}`);
@@ -74,6 +93,7 @@ export function useBudgetSync(
     previousUserId.current = currentUserId;
     if (!auth.token || !budgetPreferencesRef.current.storePrivateBudgets) {
       setServerHasBudgets(null);
+      setServerBudgetSummary(null);
       return () => undefined;
     }
     const version = requestVersion.current + 1;
@@ -84,13 +104,17 @@ export function useBudgetSync(
       .then((serverPlan) => {
         if (!active || requestVersion.current !== version) return;
         setServerHasBudgets(Boolean(serverPlan));
+        setServerBudgetSummary(serverPlan ? summarizeBudgetPlan(serverPlan) : null);
         if (serverPlan) {
           setBudgetPlan(serverPlan);
           saveBudgetPlan(serverPlan);
+          setBudgetHasUnsyncedChanges(false);
+          setBudgetLastSyncedAt(new Date().toISOString());
           setBudgetSyncStatus('Private budgets loaded from the server.');
         } else if (isNewLogin && hasBudgets(budgetPlanRef.current)) {
           void syncToServer(budgetPlanRef.current, token);
         } else {
+          setBudgetHasUnsyncedChanges(false);
           setBudgetSyncStatus('Private budget storage is enabled.');
         }
       })
@@ -107,6 +131,7 @@ export function useBudgetSync(
   function updateBudgetPlan(next: BudgetPlan): void {
     setBudgetPlan(next);
     saveBudgetPlan(next);
+    setBudgetHasUnsyncedChanges(hasBudgets(next));
     if (auth.token && budgetPreferences.storePrivateBudgets) {
       void syncToServer(next, auth.token);
     }
@@ -131,10 +156,25 @@ export function useBudgetSync(
     try {
       await deleteStoredBudgets(config, token);
       setServerHasBudgets(false);
+      setServerBudgetSummary(null);
+      setBudgetLastSyncedAt(null);
+      setBudgetHasUnsyncedChanges(hasBudgets(budgetPlanRef.current));
       setBudgetSyncStatus('Private server budgets deleted.');
     } catch (error: unknown) {
       setBudgetSyncStatus(`Could not delete private server budgets: ${errorMessage(error)}`);
     }
+  }
+
+  async function syncBudgetsNow(): Promise<void> {
+    if (!auth.token) {
+      setBudgetSyncStatus('Sign in to sync budgets on the server.');
+      return;
+    }
+    if (!budgetPreferences.storePrivateBudgets) {
+      setBudgetSyncStatus('Enable private budget synchronization in Account settings first.');
+      return;
+    }
+    await syncToServer(budgetPlanRef.current, auth.token);
   }
 
   return {
@@ -146,6 +186,10 @@ export function useBudgetSync(
         ? 'Budgets remain local to this browser.'
         : budgetSyncStatus,
     serverHasBudgets,
+    serverBudgetSummary,
+    budgetLastSyncedAt,
+    budgetHasUnsyncedChanges,
+    syncBudgetsNow,
     deleteServerBudgets,
     updateBudgetPlan,
     updateBudgetPreferences,
