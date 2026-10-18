@@ -1,13 +1,25 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { Categories } from './Categories';
 import { categoryEntries, type UserCategoryState } from '../../data/categories';
+import type { RulesController } from '../rules/ruleTypes';
+import { Categories } from './Categories';
 
 const testState: UserCategoryState = {
   categories: [{ id: 'category-groceries', name: 'groceries', aliases: [] }],
   deletedIds: [],
 };
 const entries = categoryEntries(testState);
+const rulesController: RulesController = {
+  rules: [],
+  categories: [],
+  editableRules: [],
+  actions: {
+    importRules: vi.fn(),
+    updateRule: vi.fn(),
+    deleteRule: vi.fn(),
+    removeAllRules: vi.fn(),
+  },
+};
 
 function props(overrides: Record<string, unknown> = {}) {
   return {
@@ -17,6 +29,7 @@ function props(overrides: Record<string, unknown> = {}) {
     onRename: vi.fn(),
     onDelete: vi.fn(),
     onImport: vi.fn(),
+    rulesController,
     ...overrides,
   };
 }

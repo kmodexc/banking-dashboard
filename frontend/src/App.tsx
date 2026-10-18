@@ -7,6 +7,7 @@ import type { AppTab } from './components/app/appTabs';
 import { AuthControls, FilePicker } from './components/app/AppChrome';
 import type { AuthSnapshot } from './types';
 import { useFinanceWorkspace } from './hooks/useFinanceWorkspace';
+import { useRulesController } from './hooks/useRulesController';
 import { useTransactions } from './hooks/useTransactions';
 import './styles.css';
 
@@ -52,17 +53,11 @@ export function App(): ReactElement {
     userCategoryState,
     transactions,
     rules,
-    userRules,
-    categorizedUserRules,
     localRuleCount,
-    managedRules,
-    ruleCategoryOptions,
     addRule,
     addRules,
-    deleteUserRule,
     removePrivateServerRules,
     removeCommunityRules,
-    replaceLocalRules,
     rulePreferences,
     ruleSyncStatus,
     ruleLastSyncedAt,
@@ -71,7 +66,6 @@ export function App(): ReactElement {
     serverCategoryCount,
     serverRuleCount,
     updateRulePreferences,
-    updateUserRule,
     serverHasBudgets,
     serverBudgetSummary,
     budgetLastSyncedAt,
@@ -81,6 +75,15 @@ export function App(): ReactElement {
     updateBudgetPlan,
     updateBudgetPreferences,
   } = workspace;
+  const rulesController = useRulesController({
+    rules: workspace.managedRules,
+    categories: workspace.ruleCategoryOptions,
+    editableRules: workspace.userRules,
+    onImport: workspace.replaceLocalRules,
+    onUpdate: workspace.updateUserRule,
+    onDelete: workspace.deleteUserRule,
+    onRemoveAll: () => workspace.replaceLocalRules([]),
+  });
   const [tab, setTab] = useState<AppTab>('dashboard');
   const [selectedCategories, setSelectedCategories] = useState<string[] | null>(null);
   const ruleSyncError = ruleSyncStatus.startsWith('Could not ');
@@ -120,7 +123,7 @@ export function App(): ReactElement {
       onAddRule: addRule,
       onAddRules: addRules,
       categories,
-      userRules: categorizedUserRules,
+      rulesController,
     },
     categories: {
       entries: categoryEntries,
@@ -129,15 +132,7 @@ export function App(): ReactElement {
       onRename: renameUserCategory,
       onDelete: deleteUserCategory,
       onImport: updateUserCategories,
-      ruleManager: {
-        rules: managedRules,
-        categories: ruleCategoryOptions,
-        rulesToExport: userRules,
-        onImport: replaceLocalRules,
-        onUpdate: updateUserRule,
-        onDelete: deleteUserRule,
-        onRemoveAll: () => replaceLocalRules([]),
-      },
+      rulesController,
     },
     allTransactions: {
       transactions,

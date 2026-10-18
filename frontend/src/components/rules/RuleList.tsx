@@ -1,19 +1,19 @@
 import { useMemo, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
 import { parseImportedRules, ruleKey, serializeRules } from '../../data/rules';
 import { CategoryRuleSchema } from '../../types';
-import type { CategoryRule, ManagedRule, RuleCategoryOption } from '../../types';
+import type { CategoryRule, ManagedRule } from '../../types';
 import { RuleDeleteDialog } from './RuleDeleteDialog';
-import { RuleDetailsModal } from './RuleDetailsModal';
+import { RuleForm } from './RuleForm';
+import type { RulesController } from './ruleTypes';
 
-type RuleEntry = CategoryRule | ManagedRule;
 type RuleSort = 'time' | 'name' | 'category';
 
-function getRule(entry: RuleEntry): CategoryRule {
-  return 'rule' in entry ? entry.rule : entry;
+function getRule(entry: ManagedRule): CategoryRule {
+  return entry.rule;
 }
 
-function getCategoryLabel(entry: RuleEntry): string {
-  return 'categoryLabel' in entry ? entry.categoryLabel : entry.category;
+function getCategoryLabel(entry: ManagedRule): string {
+  return entry.categoryLabel;
 }
 
 function addedAtValue(rule: CategoryRule): number {
@@ -32,50 +32,26 @@ function addedAtLabel(rule: CategoryRule): string {
   }).format(new Date(rule.createdAt));
 }
 
-export function RuleSummaryList({
-  rules,
-  categories,
-  title = 'Recently added rules',
-  description = 'Select a rule to view its details.',
-  listLabel = 'Recently added rules',
-  emptyMessage = 'No rules added yet.',
-  rulesToExport,
-  onImport,
-  onUpdate,
-  onDelete,
-  onRemoveAll,
-}: {
-  rules: RuleEntry[];
-  categories?: RuleCategoryOption[];
-  title?: string;
-  description?: string;
-  listLabel?: string;
-  emptyMessage?: string;
-  rulesToExport?: CategoryRule[];
-  onImport?: (rules: CategoryRule[]) => void;
-  onUpdate?: (previous: CategoryRule, next: CategoryRule) => void;
-  onDelete?: (rule: CategoryRule) => void;
-  onRemoveAll?: () => void;
-}): ReactElement {
+export function RuleList({ rulesController }: { rulesController: RulesController }): ReactElement {
+  const { rules, categories, editableRules, actions } = rulesController;
   const fileInput = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState('');
   const [message, setMessage] = useState('');
   const [sort, setSort] = useState<RuleSort>('time');
-  const [selectedEntry, setSelectedEntry] = useState<RuleEntry | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<ManagedRule | null>(null);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
-  const isManageable = rulesToExport !== undefined;
   const normalizedFilter = filter.trim().toLocaleLowerCase();
   const visibleRules = useMemo(
     () =>
       rules.filter((entry) => {
-        if (!isManageable || !normalizedFilter) return true;
+        if (!normalizedFilter) return true;
         return [getRule(entry).keyword, getCategoryLabel(entry)]
           .join(' ')
           .toLocaleLowerCase()
           .includes(normalizedFilter);
       }),
-    [isManageable, normalizedFilter, rules],
+    [normalizedFilter, rules],
   );
   const sortedRules = useMemo(() => {
     const next = [...visibleRules];
@@ -90,7 +66,6 @@ export function RuleSummaryList({
   }, [sort, visibleRules]);
 
   function saveRule(previous: CategoryRule, nextRule: CategoryRule): string | null {
-    if (!onUpdate) return null;
     const result = CategoryRuleSchema.safeParse({
       ...nextRule,
       keyword: nextRule.keyword.trim(),
@@ -111,16 +86,15 @@ export function RuleSummaryList({
       setMessage(nextMessage);
       return nextMessage;
     }
-    onUpdate(previous, result.data);
+    actions.updateRule(previous, result.data);
     setMessage('');
     return null;
   }
 
   function exportRules(): void {
-    if (!rulesToExport) return;
     const link = document.createElement('a');
     link.href = URL.createObjectURL(
-      new Blob([serializeRules(rulesToExport)], { type: 'application/json' }),
+      new Blob([serializeRules(editableRules)], { type: 'application/json' }),
     );
     link.download = 'finance-dashboard-rules.json';
     link.click();
@@ -131,13 +105,13 @@ export function RuleSummaryList({
   async function importRules(event: ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = '';
-    if (!file || !onImport) return;
+    if (!file) return;
     const imported = parseImportedRules(await file.text());
     if (!imported) {
       setMessage('The rules file is invalid.');
       return;
     }
-    onImport(imported);
+    actions.importRules(imported);
     setMessage('Rules imported.');
   }
 
@@ -152,23 +126,23 @@ export function RuleSummaryList({
   }
 
   function removeAllRules(): void {
-    if (deleteConfirmation !== 'delete' || !onRemoveAll) return;
-    onRemoveAll();
+    if (deleteConfirmation !== 'delete') return;
+    actions.removeAllRules();
     cancelDeleteAll();
   }
 
   return (
-    <section className="recent-rules panel" aria-labelledby="recent-rules-heading">
+    <section className="recent-rules panel" aria-labelledby="rules-heading">
       <div className="recent-rules-heading">
         <div>
-          <h2 id="recent-rules-heading">{title}</h2>
-          <p className="muted small">{description}</p>
+          <h2 id="rules-heading">Categorization rules</h2>
+          <p className="muted small">Select a rule to view and manage its details.</p>
         </div>
         <div className="recent-rules-header-controls">
           <label className="rule-sort">
             Sort by
             <select
-              aria-label={`${listLabel} sort order`}
+              aria-label="Categorization rules sort order"
               value={sort}
               onChange={(event) => setSort(event.currentTarget.value as RuleSort)}
             >
@@ -179,14 +153,11 @@ export function RuleSummaryList({
           </label>
         </div>
       </div>
-      {isManageable && (
-        <div className="rule-management-content">
-          <div className="rule-management-heading">
-            <strong>Manage rules</strong>
-            <span className="muted small">
-              {visibleRules.length} of {rules.length} shown
-            </span>
-          </div>
+      <div className="rule-summary-tools">
+        <div className="rule-summary-tools-heading">
+          <span className="muted small">
+            {visibleRules.length} of {rules.length} shown
+          </span>
           <div className="category-actions">
             <button className="button secondary" type="button" onClick={exportRules}>
               Export rules
@@ -204,30 +175,30 @@ export function RuleSummaryList({
             <button
               className="button remove-all-rules-button"
               type="button"
-              disabled={!rulesToExport.length}
+              disabled={!editableRules.length}
               onClick={openDeleteAllConfirmation}
             >
               Remove all rules
             </button>
           </div>
-          <p className="muted small">
-            Importing replaces your editable rules. Read-only shared rules stay unchanged.
-          </p>
-          <label className="rule-filter">
-            Filter rules
-            <input
-              type="search"
-              aria-label="Filter rules"
-              placeholder="Keyword or category"
-              value={filter}
-              onChange={(event) => setFilter(event.currentTarget.value)}
-            />
-          </label>
-          {message && <p className="notice category-auth-notice">{message}</p>}
         </div>
-      )}
+        <label className="rule-filter">
+          Filter rules
+          <input
+            type="search"
+            aria-label="Filter rules"
+            placeholder="Keyword or category"
+            value={filter}
+            onChange={(event) => setFilter(event.currentTarget.value)}
+          />
+        </label>
+        <p className="muted small">
+          Importing replaces your editable rules. Read-only shared rules stay unchanged.
+        </p>
+        {message && <p className="notice category-auth-notice">{message}</p>}
+      </div>
       {sortedRules.length ? (
-        <ol className="recent-rule-list" aria-label={listLabel}>
+        <ol className="recent-rule-list" aria-label="Categorization rule list">
           {sortedRules.map((entry) => {
             const rule = getRule(entry);
             const key = ruleKey(rule);
@@ -253,15 +224,14 @@ export function RuleSummaryList({
           })}
         </ol>
       ) : (
-        <p className="muted">{emptyMessage}</p>
+        <p className="muted">No rules match this filter.</p>
       )}
       {selectedEntry && (
-        <RuleDetailsModal
+        <RuleForm
           rule={getRule(selectedEntry)}
-          categoryLabel={getCategoryLabel(selectedEntry)}
           categories={categories}
-          onSave={onUpdate ? (next) => saveRule(getRule(selectedEntry), next) : undefined}
-          onDelete={onDelete ? () => onDelete(getRule(selectedEntry)) : undefined}
+          onSave={(next) => saveRule(getRule(selectedEntry), next)}
+          onDelete={() => actions.deleteRule(getRule(selectedEntry))}
           onClose={() => setSelectedEntry(null)}
         />
       )}

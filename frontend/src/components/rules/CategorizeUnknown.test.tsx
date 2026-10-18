@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { OidcClient } from '../../auth';
 import type { AuthSnapshot, Transaction } from '../../types';
 import { CategorizeUnknown } from './CategorizeUnknown';
+import type { RulesController } from './ruleTypes';
 
 const signedOut: AuthSnapshot = { token: null, user: null, setupError: null };
 const transaction: Transaction = {
@@ -22,6 +23,17 @@ const previousTransaction: Transaction = {
   period: '2025-12',
   recipient: 'PREVIOUS SHOP',
 };
+const rulesController: RulesController = {
+  rules: [],
+  categories: [],
+  editableRules: [],
+  actions: {
+    importRules: vi.fn(),
+    updateRule: vi.fn(),
+    deleteRule: vi.fn(),
+    removeAllRules: vi.fn(),
+  },
+};
 
 describe('categorize unknown', () => {
   function renderPage(transactions: Transaction[] = [transaction]): void {
@@ -29,11 +41,11 @@ describe('categorize unknown', () => {
       <CategorizeUnknown
         transactions={transactions}
         rules={[]}
-        userRules={[]}
         auth={signedOut}
         client={{} as OidcClient}
         onAddRule={vi.fn()}
         onAddRules={vi.fn()}
+        rulesController={rulesController}
       />,
     );
   }
@@ -41,8 +53,8 @@ describe('categorize unknown', () => {
   it('renders the reusable recent-rules component below the form', () => {
     renderPage();
 
-    expect(screen.getByText('No rules added yet.')).toBeInTheDocument();
-    const heading = screen.getByRole('heading', { name: 'Recently added rules' });
+    expect(screen.getByText('No rules match this filter.')).toBeInTheDocument();
+    const heading = screen.getByRole('heading', { name: 'Categorization rules' });
     expect(heading.closest('.content-grid')).toBeNull();
     expect(heading.closest('.recent-rules')).toHaveClass('panel');
   });

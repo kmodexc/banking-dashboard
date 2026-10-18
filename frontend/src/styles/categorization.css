@@ -400,12 +400,12 @@
 .recent-rules-heading h2 {
   margin-bottom: 0.2rem;
 }
-.rule-management-content {
+.rule-summary-tools {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--line);
 }
-.rule-management-heading {
+.rule-summary-tools-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -484,18 +484,38 @@
   font-size: 0.82rem;
   font-weight: 650;
 }
-.rule-editor {
+.rule-form {
   display: grid;
   width: 100%;
   gap: 0.8rem;
 }
-.rule-editor .category-editor {
+.rule-form .category-editor {
   margin-top: 0;
 }
-.rule-details-list {
-  margin-top: 1rem;
+.rule-form-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
 }
-.rule-details-actions {
+.rule-form-heading h2 {
+  margin: 0.2rem 0 0;
+}
+.rule-form-created {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: right;
+}
+.rule-form-created span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.rule-form-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -515,7 +535,7 @@
   margin: 0;
   color: var(--danger);
 }
-.rule-delete-confirmation .rule-details-actions {
+.rule-delete-confirmation .rule-form-actions {
   margin-top: 0.8rem;
   padding-top: 0.8rem;
   border-top-color: #ffd1cc;
@@ -553,5 +573,11 @@
   .rule-sort {
     width: 100%;
     justify-content: space-between;
+  }
+  .rule-form-heading {
+    flex-direction: column;
+  }
+  .rule-form-created {
+    text-align: left;
   }
 }

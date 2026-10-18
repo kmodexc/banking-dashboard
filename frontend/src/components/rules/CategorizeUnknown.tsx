@@ -1,17 +1,12 @@
 import { useState, type ReactElement } from 'react';
 import { OidcClient } from '../../auth';
-import type {
-  AuthSnapshot,
-  CategoryRule,
-  ClassificationRule,
-  RuleColumn,
-  Transaction,
-} from '../../types';
+import type { AuthSnapshot, CategoryRule, ClassificationRule, Transaction } from '../../types';
 import { matchesRule, unknownTransactions } from '../../data/rules';
 import { AiSuggestions } from './AiSuggestions';
-import { LocalRuleForm } from './LocalRuleForm';
-import { RuleSummaryList } from './RuleSummaryList';
+import { RuleForm } from './RuleForm';
+import { RuleList } from './RuleList';
 import { UnknownTransactionPicker } from './UnknownTransactionPicker';
+import type { RulesController } from './ruleTypes';
 
 export function CategorizeUnknown({
   transactions,
@@ -20,7 +15,7 @@ export function CategorizeUnknown({
   client,
   onAddRule,
   onAddRules,
-  userRules,
+  rulesController,
   categories: availableCategories = [],
 }: {
   transactions: Transaction[];
@@ -29,20 +24,17 @@ export function CategorizeUnknown({
   client: OidcClient;
   onAddRule: (rule: CategoryRule) => void;
   onAddRules: (rules: ClassificationRule[]) => void;
-  userRules: CategoryRule[];
+  rulesController: RulesController;
   categories?: string[];
 }): ReactElement {
   const unknown = unknownTransactions(transactions);
   const [selectedId, setSelectedId] = useState(unknown[0]?.id ?? '');
-  const [keyword, setKeyword] = useState(unknown[0]?.recipient ?? '');
-  const [category, setCategory] = useState('');
-  const [column, setColumn] = useState<RuleColumn>('recipient');
   const selected = unknown.find((row) => row.id === selectedId) ?? unknown[0];
   const categories = [...new Set([...availableCategories, ...rules.map((rule) => rule.category)])];
+  const categoryOptions = categories.map((value) => ({ value, label: value }));
 
   function selectTransaction(transaction: Transaction | undefined): void {
     setSelectedId(transaction?.id ?? '');
-    setKeyword(transaction?.recipient ?? '');
   }
 
   function addRule(rule: CategoryRule): void {
@@ -59,15 +51,11 @@ export function CategorizeUnknown({
           onSelect={selectTransaction}
         />
         <article className="panel">
-          <LocalRuleForm
-            keyword={keyword}
-            category={category}
-            column={column}
-            categories={categories}
-            onKeywordChange={setKeyword}
-            onCategoryChange={setCategory}
-            onColumnChange={setColumn}
-            onAddRule={addRule}
+          <RuleForm
+            key={selected?.id ?? 'new-rule'}
+            initialValues={{ keyword: selected?.recipient ?? '' }}
+            categories={categoryOptions}
+            onAdd={addRule}
           />
           <AiSuggestions
             transactions={unknown}
@@ -78,7 +66,7 @@ export function CategorizeUnknown({
           />
         </article>
       </div>
-      <RuleSummaryList rules={userRules} />
+      <RuleList rulesController={rulesController} />
     </section>
   );
 }

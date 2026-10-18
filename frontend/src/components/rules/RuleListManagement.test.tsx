@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { CategoryRule, ManagedRule } from '../../types';
-import { RuleSummaryList } from './RuleSummaryList';
+import { RuleList } from './RuleList';
+import type { RuleActions, RulesController } from './ruleTypes';
 
 const userRule: CategoryRule = {
   keyword: 'SPC.CAFE',
@@ -22,26 +23,34 @@ const rules: ManagedRule[] = [
   },
 ];
 
-describe('manageable rule summary list', () => {
-  it('shows personal rules in the shared summary panel', () => {
-    render(
-      <RuleSummaryList
-        rules={rules}
-        categories={[{ value: 'groceries', label: 'groceries' }]}
-        title="Categorization rules"
-        listLabel="Categorization rule list"
-        rulesToExport={[userRule]}
-        onImport={vi.fn()}
-        onUpdate={vi.fn()}
-        onDelete={vi.fn()}
-        onRemoveAll={vi.fn()}
-      />,
-    );
+function controller(
+  managedRules: ManagedRule[] = rules,
+  actionOverrides: Partial<RuleActions> = {},
+): RulesController {
+  return {
+    rules: managedRules,
+    categories: [
+      { value: 'groceries', label: 'groceries' },
+      { value: 'restaurant', label: 'restaurant' },
+    ],
+    editableRules: managedRules.map((entry) => entry.rule),
+    actions: {
+      importRules: vi.fn(),
+      updateRule: vi.fn(),
+      deleteRule: vi.fn(),
+      removeAllRules: vi.fn(),
+      ...actionOverrides,
+    },
+  };
+}
+
+describe('rule summary list management', () => {
+  it('shows all rules in the shared summary panel', () => {
+    render(<RuleList rulesController={controller()} />);
 
     expect(screen.getByRole('heading', { name: 'Categorization rules' })).toBeInTheDocument();
-    expect(screen.getByText('Manage rules')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Export rules' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove all rules' })).toBeInTheDocument();
   });
 
   it('keeps the supplied newest-first order in the rule list', () => {
@@ -55,18 +64,7 @@ describe('manageable rule summary list', () => {
       categoryLabel: 'groceries',
       source: 'user',
     };
-    render(
-      <RuleSummaryList
-        rules={[newest, older]}
-        categories={[{ value: 'groceries', label: 'groceries' }]}
-        listLabel="Categorization rule list"
-        rulesToExport={[newest.rule, older.rule]}
-        onImport={vi.fn()}
-        onUpdate={vi.fn()}
-        onDelete={vi.fn()}
-        onRemoveAll={vi.fn()}
-      />,
-    );
+    render(<RuleList rulesController={controller([newest, older])} />);
 
     const rows = Array.from(
       screen.getByLabelText('Categorization rule list').querySelectorAll('.rule-row'),
@@ -80,23 +78,13 @@ describe('manageable rule summary list', () => {
     const onUpdate = vi.fn();
     const onDelete = vi.fn();
     render(
-      <RuleSummaryList
-        rules={[rules[0]!]}
-        categories={[
-          { value: 'groceries', label: 'groceries' },
-          { value: 'restaurant', label: 'restaurant' },
-        ]}
-        rulesToExport={[userRule]}
-        onImport={vi.fn()}
-        onUpdate={onUpdate}
-        onDelete={onDelete}
-        onRemoveAll={vi.fn()}
+      <RuleList
+        rulesController={controller([rules[0]!], { updateRule: onUpdate, deleteRule: onDelete })}
       />,
     );
 
     fireEvent.click(screen.getByRole('button', { name: /SPC\.CAFE/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Edit rule' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Edit rule keyword' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'Keyword' }), {
       target: { value: 'SPC.BAKERY' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save rule' }));
@@ -115,17 +103,7 @@ describe('manageable rule summary list', () => {
 
   it('imports a validated replacement for editable rules', async () => {
     const onImport = vi.fn();
-    render(
-      <RuleSummaryList
-        rules={rules}
-        categories={[{ value: 'groceries', label: 'groceries' }]}
-        rulesToExport={[userRule]}
-        onImport={onImport}
-        onUpdate={vi.fn()}
-        onDelete={vi.fn()}
-        onRemoveAll={vi.fn()}
-      />,
-    );
+    render(<RuleList rulesController={controller(rules, { importRules: onImport })} />);
 
     const file = new File(
       [JSON.stringify([{ keyword: 'SPC.BAKERY', category: 'groceries', column: 'recipient' }])],
@@ -142,7 +120,7 @@ describe('manageable rule summary list', () => {
     expect(screen.getByText('Rules imported.')).toBeInTheDocument();
   });
 
-  it('exports the editable rules without shared read-only rules', async () => {
+  it('exports the editable rules', async () => {
     const createObjectURL = vi.fn((blob: Blob) =>
       blob instanceof Blob ? 'blob:rules' : 'invalid',
     );
@@ -151,43 +129,22 @@ describe('manageable rule summary list', () => {
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => undefined);
     vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
-    render(
-      <RuleSummaryList
-        rules={rules}
-        categories={[{ value: 'groceries', label: 'groceries' }]}
-        rulesToExport={[userRule]}
-        onImport={vi.fn()}
-        onUpdate={vi.fn()}
-        onDelete={vi.fn()}
-        onRemoveAll={vi.fn()}
-      />,
-    );
+    render(<RuleList rulesController={controller()} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Export rules' }));
 
     expect(createObjectURL).toHaveBeenCalledOnce();
     const exported = createObjectURL.mock.calls[0]?.[0] as Blob;
     await expect(exported.text()).resolves.toContain('SPC.CAFE');
-    await expect(exported.text()).resolves.not.toContain('EDEKA');
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:rules');
     expect(screen.getByText('Rules exported.')).toBeInTheDocument();
     click.mockRestore();
     vi.unstubAllGlobals();
   });
 
-  it('requires typing delete and supports cancel before removing all user rules', () => {
+  it('requires typing delete and supports cancel before removing all rules', () => {
     const onRemoveAll = vi.fn();
-    render(
-      <RuleSummaryList
-        rules={[rules[0]!]}
-        categories={[{ value: 'groceries', label: 'groceries' }]}
-        rulesToExport={[userRule]}
-        onImport={vi.fn()}
-        onUpdate={vi.fn()}
-        onDelete={vi.fn()}
-        onRemoveAll={onRemoveAll}
-      />,
-    );
+    render(<RuleList rulesController={controller([rules[0]!], { removeAllRules: onRemoveAll })} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove all rules' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();

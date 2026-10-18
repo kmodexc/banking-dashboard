@@ -3,21 +3,14 @@ import type { OidcClient } from '../../auth';
 import type { BudgetPlan } from '../../data/budgets';
 import type { CategoryEntry, UserCategoryState } from '../../data/categories';
 import type { AccountProps } from '../account/types';
-import type {
-  AuthSnapshot,
-  CategoryRule,
-  ClassificationRule,
-  ManagedRule,
-  RuleCategoryOption,
-  Transaction,
-} from '../../types';
+import { Categories } from '../categories/Categories';
+import type { RulesController } from '../rules/ruleTypes';
+import type { AuthSnapshot, CategoryRule, ClassificationRule, Transaction } from '../../types';
 import { Account } from '../account/Account';
 import { AllTransactions } from '../transactions/AllTransactions';
-import { Categories } from '../categories/Categories';
 import { CategorizeUnknown } from '../rules/CategorizeUnknown';
 import { Dashboard } from '../dashboard/Dashboard';
 import { Plan } from '../plan/Plan';
-import { RuleSummaryList } from '../rules/RuleSummaryList';
 import type { AppTab } from './appTabs';
 
 interface DashboardView {
@@ -46,7 +39,7 @@ interface UnknownView {
   onAddRule: (rule: CategoryRule) => void;
   onAddRules: (rules: ClassificationRule[]) => void;
   categories: string[];
-  userRules: CategoryRule[];
+  rulesController: RulesController;
 }
 
 interface CategoriesView {
@@ -56,15 +49,7 @@ interface CategoriesView {
   onRename: (entry: CategoryEntry, name: string) => void;
   onDelete: (entry: CategoryEntry) => void;
   onImport: (next: UserCategoryState) => void;
-  ruleManager: {
-    rules: ManagedRule[];
-    categories: RuleCategoryOption[];
-    rulesToExport: CategoryRule[];
-    onImport: (rules: CategoryRule[]) => void;
-    onUpdate: (previous: CategoryRule, next: CategoryRule) => void;
-    onDelete: (rule: CategoryRule) => void;
-    onRemoveAll: () => void;
-  };
+  rulesController: RulesController;
 }
 
 interface AllTransactionsView {
@@ -108,20 +93,8 @@ export function TabContent({
           onRename={categories.onRename}
           onDelete={categories.onDelete}
           onImport={categories.onImport}
-        >
-          <RuleSummaryList
-            rules={categories.ruleManager.rules}
-            categories={categories.ruleManager.categories}
-            title="Categorization rules"
-            listLabel="Categorization rule list"
-            emptyMessage="No rules match this filter."
-            rulesToExport={categories.ruleManager.rulesToExport}
-            onImport={categories.ruleManager.onImport}
-            onUpdate={categories.ruleManager.onUpdate}
-            onDelete={categories.ruleManager.onDelete}
-            onRemoveAll={categories.ruleManager.onRemoveAll}
-          />
-        </Categories>
+          rulesController={categories.rulesController}
+        />
       );
     case 'all':
       return <AllTransactions {...allTransactions} />;

@@ -1,5 +1,7 @@
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement } from 'react';
 import type { CategoryEntry, UserCategoryState } from '../../data/categories';
+import { RuleList } from '../rules/RuleList';
+import type { RulesController } from '../rules/ruleTypes';
 import { CategoryEditor } from './CategoryEditor';
 
 export function Categories({
@@ -9,7 +11,7 @@ export function Categories({
   onRename,
   onDelete,
   onImport,
-  children,
+  rulesController,
 }: {
   entries: CategoryEntry[];
   state: UserCategoryState;
@@ -17,7 +19,7 @@ export function Categories({
   onRename: (entry: CategoryEntry, name: string) => void;
   onDelete: (entry: CategoryEntry) => void;
   onImport: (next: UserCategoryState) => void;
-  children?: ReactNode;
+  rulesController: RulesController;
 }): ReactElement {
   return (
     <section id="categories-tab" className="tab-panel">
@@ -29,7 +31,7 @@ export function Categories({
         onDelete={onDelete}
         onImport={onImport}
       />
-      {children}
+      <RuleList rulesController={rulesController} />
     </section>
   );
 }
