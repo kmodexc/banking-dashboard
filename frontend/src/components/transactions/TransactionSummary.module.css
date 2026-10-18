@@ -1,22 +1,30 @@
-.transaction-summary {
+.summary {
   display: grid;
   gap: 0.65rem;
+  margin: 1.4rem 0;
+  padding: 1rem;
+  border-radius: 10px;
+  background: var(--wash);
 }
-.transaction-summary-main {
+
+.main {
   display: grid;
   min-width: 0;
   gap: 0.15rem;
 }
-.transaction-summary-main strong,
-.transaction-summary-main span {
+
+.main strong,
+.main span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.transaction-summary-main span {
+
+.main span {
   color: var(--muted);
 }
-.transaction-summary-meta {
+
+.meta {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -24,37 +32,33 @@
   color: var(--muted);
   font-size: 0.78rem;
 }
-.transaction-summary-amount {
-  font-weight: 750;
+
+.amount {
+  font-size: 1.55rem;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
-.transaction-summary-details {
+
+.details {
   display: grid;
   gap: 0.4rem;
   margin: 0;
 }
-.transaction-summary-details > div {
+
+.details > div {
   display: grid;
   grid-template-columns: 7.3rem minmax(0, 1fr);
   gap: 1rem;
 }
-.transaction-summary-details dt {
+
+.details dt {
   color: var(--muted);
   font-size: 0.78rem;
 }
-.transaction-summary-details dd {
+
+.details dd {
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
   font-weight: 600;
-}
-.details-modal .transaction-summary {
-  margin: 1.4rem 0;
-  padding: 1rem;
-  border-radius: 10px;
-  background: var(--wash);
-}
-.details-modal .transaction-summary-amount {
-  font-size: 1.55rem;
-  font-weight: 800;
 }
