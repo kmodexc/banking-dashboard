@@ -132,58 +132,21 @@ export function RuleList({ rulesController }: { rulesController: RulesController
   }
 
   return (
-    <section className="recent-rules panel" aria-labelledby="rules-heading">
-      <div className="recent-rules-heading">
+    <section className="recent-rules rule-list-panel panel" aria-labelledby="rules-heading">
+      <div className="rule-list-heading">
         <div>
+          <p className="eyebrow accent-eyebrow">Personal automation</p>
           <h2 id="rules-heading">Categorization rules</h2>
-          <p className="muted small">Select a rule to view and manage its details.</p>
+          <p className="muted small">Search, sort, and select a rule to edit its details.</p>
         </div>
-        <div className="recent-rules-header-controls">
-          <label className="rule-sort">
-            Sort by
-            <select
-              aria-label="Categorization rules sort order"
-              value={sort}
-              onChange={(event) => setSort(event.currentTarget.value as RuleSort)}
-            >
-              <option value="time">Time added</option>
-              <option value="name">Name</option>
-              <option value="category">Category</option>
-            </select>
-          </label>
+        <div className="rule-list-total" aria-label={`${rules.length} total rules`}>
+          <strong>{rules.length}</strong>
+          <span>total rules</span>
         </div>
       </div>
-      <div className="rule-summary-tools">
-        <div className="rule-summary-tools-heading">
-          <span className="muted small">
-            {visibleRules.length} of {rules.length} shown
-          </span>
-          <div className="category-actions">
-            <button className="button secondary" type="button" onClick={exportRules}>
-              Export rules
-            </button>
-            <label className="button secondary">
-              Import rules
-              <input
-                ref={fileInput}
-                className="file-picker-input"
-                type="file"
-                accept="application/json,.json"
-                onChange={(event) => void importRules(event)}
-              />
-            </label>
-            <button
-              className="button remove-all-rules-button"
-              type="button"
-              disabled={!editableRules.length}
-              onClick={openDeleteAllConfirmation}
-            >
-              Remove all rules
-            </button>
-          </div>
-        </div>
+      <div className="rule-list-toolbar">
         <label className="rule-filter">
-          Filter rules
+          <span>Search rules</span>
           <input
             type="search"
             aria-label="Filter rules"
@@ -192,19 +155,61 @@ export function RuleList({ rulesController }: { rulesController: RulesController
             onChange={(event) => setFilter(event.currentTarget.value)}
           />
         </label>
-        <p className="muted small">
-          Importing replaces your editable rules. Read-only shared rules stay unchanged.
-        </p>
+        <label className="rule-sort">
+          Sort by
+          <select
+            aria-label="Categorization rules sort order"
+            value={sort}
+            onChange={(event) => setSort(event.currentTarget.value as RuleSort)}
+          >
+            <option value="time">Time added</option>
+            <option value="name">Name</option>
+            <option value="category">Category</option>
+          </select>
+        </label>
+      </div>
+      <div className="rule-list-actions">
+        <div className="category-actions">
+          <button className="button secondary" type="button" onClick={exportRules}>
+            Export rules
+          </button>
+          <label className="button secondary">
+            Import rules
+            <input
+              ref={fileInput}
+              className="file-picker-input"
+              type="file"
+              accept="application/json,.json"
+              onChange={(event) => void importRules(event)}
+            />
+          </label>
+          <button
+            className="button remove-all-rules-button"
+            type="button"
+            disabled={!editableRules.length}
+            onClick={openDeleteAllConfirmation}
+          >
+            Remove all rules
+          </button>
+        </div>
+        <div className="rule-list-status">
+          <span className="rule-list-results">
+            {visibleRules.length} of {rules.length} shown
+          </span>
+          <span className="muted small">
+            Import replaces editable rules; shared rules stay unchanged.
+          </span>
+        </div>
         {message && <p className="notice category-auth-notice">{message}</p>}
       </div>
       {sortedRules.length ? (
-        <ol className="recent-rule-list" aria-label="Categorization rule list">
+        <ul className="recent-rule-list rule-list" aria-label="Categorization rule list">
           {sortedRules.map((entry) => {
             const rule = getRule(entry);
             const key = ruleKey(rule);
             return (
               <li
-                className="recent-rule rule-row"
+                className="recent-rule rule-list-item rule-row"
                 key={`${'source' in entry ? entry.source : 'user'}:${key}`}
               >
                 <button
@@ -212,19 +217,29 @@ export function RuleList({ rulesController }: { rulesController: RulesController
                   type="button"
                   onClick={() => setSelectedEntry(entry)}
                 >
-                  <strong>{rule.keyword}</strong>
-                  <span className="recent-rule-category">{getCategoryLabel(entry)}</span>
-                  <span className="recent-rule-column">Searches {rule.column}</span>
-                  <time dateTime={rule.createdAt} className="recent-rule-time">
-                    {addedAtLabel(rule)}
-                  </time>
+                  <span className="rule-list-main">
+                    <strong>{rule.keyword}</strong>
+                    <span className="rule-list-category">{getCategoryLabel(entry)}</span>
+                  </span>
+                  <span className="rule-list-meta">
+                    <span className="rule-list-chip">Searches {rule.column}</span>
+                    <time dateTime={rule.createdAt} className="rule-list-time">
+                      {addedAtLabel(rule)}
+                    </time>
+                    <span className="rule-list-arrow" aria-hidden="true">
+                      →
+                    </span>
+                  </span>
                 </button>
               </li>
             );
           })}
-        </ol>
+        </ul>
       ) : (
-        <p className="muted">No rules match this filter.</p>
+        <div className="rule-list-empty">
+          <strong>No rules match this filter.</strong>
+          <span className="muted small">Try another keyword or category.</span>
+        </div>
       )}
       {selectedEntry && (
         <RuleForm
