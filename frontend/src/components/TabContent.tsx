@@ -3,14 +3,21 @@ import type { OidcClient } from '../auth';
 import type { BudgetPlan } from '../data/budgets';
 import type { BudgetPreferences } from '../data/preferences';
 import { categoryName } from '../data/categories';
-import type { AuthSnapshot, CategoryRule, ClassificationRule, Transaction } from '../types';
+import type {
+  AuthSnapshot,
+  CategoryRule,
+  ClassificationRule,
+  ManagedRule,
+  RuleCategoryOption,
+  Transaction,
+} from '../types';
 import { Account } from './Account';
 import { AllTransactions } from './AllTransactions';
 import { Categories } from './Categories';
 import { CategorizeUnknown } from './CategorizeUnknown';
 import { Dashboard } from './Dashboard';
 import { Plan } from './Plan';
-import { RuleManager, type ManagedRule, type RuleCategoryOption } from './RuleManager';
+import { RuleManager } from './RuleManager';
 import type { AppTab } from './appTabs';
 
 export interface TabContentProps {

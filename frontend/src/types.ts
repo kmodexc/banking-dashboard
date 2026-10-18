@@ -28,6 +28,19 @@ export const CategoryRuleSchema = z
   .strict();
 export type CategoryRule = z.infer<typeof CategoryRuleSchema>;
 
+export type ManagedRuleSource = 'user';
+
+export interface ManagedRule {
+  rule: CategoryRule;
+  categoryLabel: string;
+  source: ManagedRuleSource;
+}
+
+export interface RuleCategoryOption {
+  value: string;
+  label: string;
+}
+
 export const RulePreferencesSchema = z
   .object({
     storePrivateRules: z.boolean(),

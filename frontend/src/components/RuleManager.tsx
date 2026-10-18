@@ -1,20 +1,9 @@
 import { useMemo, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
 import { CategoryRuleSchema, RuleColumnSchema } from '../types';
-import type { CategoryRule } from '../types';
+import type { CategoryRule, ManagedRule, RuleCategoryOption } from '../types';
 import { parseImportedRules, ruleKey, serializeRules } from '../data/rules';
 
-export type ManagedRuleSource = 'user';
-
-export interface ManagedRule {
-  rule: CategoryRule;
-  categoryLabel: string;
-  source: ManagedRuleSource;
-}
-
-export interface RuleCategoryOption {
-  value: string;
-  label: string;
-}
+export type { ManagedRule, RuleCategoryOption } from '../types';
 
 export function RuleManager({
   rules,
