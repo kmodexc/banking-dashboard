@@ -7,6 +7,7 @@ const TAB_LABELS: Record<AppTab, string> = {
   unknown: 'Categorize unknown',
   categories: 'Categories',
   all: 'All transactions',
+  account: 'Account',
 };
 
 export function AppTabs({

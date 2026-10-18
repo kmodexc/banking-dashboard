@@ -23,6 +23,7 @@ import {
 } from './data/categories';
 import { CategorizeUnknown } from './components/CategorizeUnknown';
 import { AllTransactions } from './components/AllTransactions';
+import { Account } from './components/Account';
 import { AppTabs } from './components/AppTabs';
 import type { AppTab } from './components/appTabs';
 import { AuthControls, FilePicker } from './components/AppChrome';
@@ -93,7 +94,11 @@ export function App(): ReactElement {
     addRules,
     deleteUserRule,
     privateCategories,
+    serverCategoryCount,
+    serverRuleCount,
+    localRules,
     removePrivateServerRules,
+    removeCommunityRules,
     replaceLocalRules,
     replaceRules,
     rulePreferences,
@@ -107,6 +112,7 @@ export function App(): ReactElement {
     budgetPreferences,
     budgetSyncStatus,
     deleteServerBudgets,
+    serverHasBudgets,
     updateBudgetPlan,
     updateBudgetPreferences,
   } = budgetSync;
@@ -212,6 +218,13 @@ export function App(): ReactElement {
     }
   }
 
+  function clearLocalTransactions(): void {
+    setRawTransactions([]);
+    setPeriod('');
+    setSelectedCategories(null);
+    setLoadError('');
+  }
+
   function changeCategory(transactionId: string, category: string): void {
     setCategoryOverrides((current) => {
       const next = { ...current, [transactionId]: category };
@@ -219,6 +232,29 @@ export function App(): ReactElement {
       return next;
     });
   }
+
+  const accountPanel = (
+    <Account
+      auth={auth}
+      transactionCount={rawTransactions.length}
+      budgets={budgetPlan}
+      budgetPreferences={budgetPreferences}
+      budgetSyncStatus={budgetSyncStatus}
+      serverHasBudgets={serverHasBudgets}
+      localRuleCount={localRules.length}
+      localCategoryCount={userCategoryState.categories.length}
+      rulePreferences={rulePreferences}
+      ruleSyncStatus={ruleSyncStatus}
+      serverRuleCount={serverRuleCount}
+      serverCategoryCount={serverCategoryCount}
+      onBudgetPreferencesChange={updateBudgetPreferences}
+      onRulePreferencesChange={updateRulePreferences}
+      onDeleteServerBudgets={() => void deleteServerBudgets()}
+      onDeleteServerRules={() => void removePrivateServerRules()}
+      onDeleteCommunityRules={() => void removeCommunityRules()}
+      onClearLocalTransactions={clearLocalTransactions}
+    />
+  );
 
   function updateUserCategories(next: UserCategoryState): void {
     const storageUserId = auth.token ? categoryUserId : null;
@@ -311,21 +347,28 @@ export function App(): ReactElement {
           </section>
         )}
         {!transactions.length ? (
-          <section id="welcome-panel" className="panel empty-state">
-            <h2>Load a supported bank export to begin</h2>
-            <p>
-              Your transaction file stays in this browser. The classification service only receives
-              transactions when you explicitly ask it to suggest categories.
-            </p>
-            <FilePicker
-              id="csv-input"
-              label="Choose CSV export"
-              onChange={(event) => void handleFile(event)}
-            />
-            <p className="muted small">
-              Supported formats: DKB and Deutsche Bank credit-card CSV exports.
-            </p>
-          </section>
+          <>
+            <AppTabs activeTab={tab} onChange={setTab} />
+            {tab === 'account' ? (
+              accountPanel
+            ) : (
+              <section id="welcome-panel" className="panel empty-state">
+                <h2>Load a supported bank export to begin</h2>
+                <p>
+                  Your transaction file stays in this browser. The classification service only
+                  receives transactions when you explicitly ask it to suggest categories.
+                </p>
+                <FilePicker
+                  id="csv-input"
+                  label="Choose CSV export"
+                  onChange={(event) => void handleFile(event)}
+                />
+                <p className="muted small">
+                  Supported formats: DKB and Deutsche Bank credit-card CSV exports.
+                </p>
+              </section>
+            )}
+          </>
         ) : (
           <section id="app-panel">
             <div className="toolbar panel">
@@ -414,6 +457,7 @@ export function App(): ReactElement {
                 onCategoryChange={changeCategory}
               />
             )}
+            {tab === 'account' && accountPanel}
           </section>
         )}
       </main>

@@ -1,0 +1,168 @@
+.account-tab {
+  display: grid;
+  gap: 1rem;
+}
+.account-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin: 1.75rem 0 0.25rem;
+}
+.account-heading h2 {
+  margin: 0.2rem 0 0.35rem;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  letter-spacing: -0.03em;
+}
+.account-heading p {
+  margin: 0;
+}
+.account-identity {
+  display: flex;
+  min-width: 12rem;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.account-identity > div {
+  display: grid;
+  gap: 0.05rem;
+  min-width: 0;
+}
+.account-identity strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-identity small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.account-identity-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #aab3bd;
+}
+.account-identity.signed-in .account-identity-dot {
+  background: #2a9d8f;
+  box-shadow: 0 0 0 4px #2a9d8f1f;
+}
+.account-storage-panel,
+.account-sync-panel,
+.account-danger-panel {
+  margin: 0;
+}
+.account-data-table-wrap {
+  overflow-x: auto;
+}
+.account-data-table {
+  min-width: 680px;
+  margin-top: 0.6rem;
+}
+.account-data-table th,
+.account-data-table td {
+  white-space: normal;
+  vertical-align: top;
+}
+.account-data-table thead th {
+  cursor: default;
+  opacity: 1;
+}
+.account-data-table tbody th {
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+.account-data-table td {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+.account-table-detail {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.account-preferences {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem 0 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.account-preferences legend {
+  padding: 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.account-preferences .preference-choice {
+  margin: 0;
+}
+.account-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.account-status {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0.8rem;
+  border-radius: 10px;
+  background: var(--wash);
+  font-size: 0.82rem;
+}
+.account-status span {
+  color: var(--muted);
+}
+.account-danger-panel {
+  border-color: #f1cbc7;
+}
+.account-danger-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+.account-danger-actions .button {
+  font-size: 0.82rem;
+}
+.account-confirmation {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #f1cbc7;
+  border-radius: 10px;
+  background: #fff5f4;
+}
+.account-confirmation p {
+  margin: 0.3rem 0 0.8rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+.account-confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+@media (max-width: 700px) {
+  .account-heading {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .account-identity {
+    width: 100%;
+  }
+  .account-status-grid {
+    grid-template-columns: 1fr;
+  }
+}
