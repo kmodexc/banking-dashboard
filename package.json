@@ -15,7 +15,7 @@
     "test:integrations": "npm run test:integration",
     "test:e2e:production": "bash scripts/test-production-e2e.sh",
     "test:deployment": "bash scripts/test-deployment.sh",
-    "test:all": "cargo build --locked && npm run test:unit && npm run test:components && npm run test:integrations && npm run test:e2e:production && npm run test:deployment"
+    "test:all": "bash scripts/run-all-tests.sh"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
