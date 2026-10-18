@@ -17,7 +17,7 @@ import { Categories } from '../categories/Categories';
 import { CategorizeUnknown } from '../rules/CategorizeUnknown';
 import { Dashboard } from '../dashboard/Dashboard';
 import { Plan } from '../plan/Plan';
-import { RuleManager } from '../rules/RuleManager';
+import { RuleSummaryList } from '../rules/RuleSummaryList';
 import type { AppTab } from './appTabs';
 
 interface DashboardView {
@@ -109,7 +109,18 @@ export function TabContent({
           onDelete={categories.onDelete}
           onImport={categories.onImport}
         >
-          <RuleManager {...categories.ruleManager} />
+          <RuleSummaryList
+            rules={categories.ruleManager.rules}
+            categories={categories.ruleManager.categories}
+            title="Categorization rules"
+            listLabel="Categorization rule list"
+            emptyMessage="No rules match this filter."
+            rulesToExport={categories.ruleManager.rulesToExport}
+            onImport={categories.ruleManager.onImport}
+            onUpdate={categories.ruleManager.onUpdate}
+            onDelete={categories.ruleManager.onDelete}
+            onRemoveAll={categories.ruleManager.onRemoveAll}
+          />
         </Categories>
       );
     case 'all':

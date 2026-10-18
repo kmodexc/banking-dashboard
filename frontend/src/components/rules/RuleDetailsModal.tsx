@@ -30,6 +30,7 @@ export function RuleDetailsModal({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<CategoryRule>(rule);
   const [saveError, setSaveError] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const canEdit = Boolean(categories && onSave);
 
   function startEditing(): void {
@@ -54,7 +55,15 @@ export function RuleDetailsModal({
     onClose();
   }
 
-  function deleteRule(): void {
+  function requestDelete(): void {
+    setConfirmingDelete(true);
+  }
+
+  function cancelDelete(): void {
+    setConfirmingDelete(false);
+  }
+
+  function confirmDelete(): void {
     onDelete?.();
     onClose();
   }
@@ -114,7 +123,7 @@ export function RuleDetailsModal({
                 </div>
               )}
             </dl>
-            {(canEdit || onDelete) && (
+            {(canEdit || onDelete) && !confirmingDelete && (
               <div className="rule-details-actions">
                 {canEdit && (
                   <button className="button primary" type="button" onClick={startEditing}>
@@ -125,11 +134,30 @@ export function RuleDetailsModal({
                   <button
                     className="button secondary danger-button"
                     type="button"
-                    onClick={deleteRule}
+                    onClick={requestDelete}
                   >
                     Delete rule
                   </button>
                 )}
+              </div>
+            )}
+            {confirmingDelete && onDelete && (
+              <div className="rule-delete-confirmation">
+                <p>
+                  Delete <strong>{rule.keyword}</strong>? This cannot be undone.
+                </p>
+                <div className="rule-details-actions">
+                  <button className="button secondary" type="button" onClick={cancelDelete}>
+                    Keep rule
+                  </button>
+                  <button
+                    className="button secondary danger-button"
+                    type="button"
+                    onClick={confirmDelete}
+                  >
+                    Confirm delete
+                  </button>
+                </div>
               </div>
             )}
           </>

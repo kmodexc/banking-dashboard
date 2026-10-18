@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { RuleManager, type ManagedRule } from './RuleManager';
-import type { CategoryRule } from '../../types';
+import type { CategoryRule, ManagedRule } from '../../types';
+import { RuleSummaryList } from './RuleSummaryList';
 
 const userRule: CategoryRule = {
   keyword: 'SPC.CAFE',
@@ -22,12 +22,14 @@ const rules: ManagedRule[] = [
   },
 ];
 
-describe('rule manager', () => {
+describe('manageable rule summary list', () => {
   it('shows personal rules in the shared summary panel', () => {
     render(
-      <RuleManager
+      <RuleSummaryList
         rules={rules}
         categories={[{ value: 'groceries', label: 'groceries' }]}
+        title="Categorization rules"
+        listLabel="Categorization rule list"
         rulesToExport={[userRule]}
         onImport={vi.fn()}
         onUpdate={vi.fn()}
@@ -54,9 +56,10 @@ describe('rule manager', () => {
       source: 'user',
     };
     render(
-      <RuleManager
+      <RuleSummaryList
         rules={[newest, older]}
         categories={[{ value: 'groceries', label: 'groceries' }]}
+        listLabel="Categorization rule list"
         rulesToExport={[newest.rule, older.rule]}
         onImport={vi.fn()}
         onUpdate={vi.fn()}
@@ -77,7 +80,7 @@ describe('rule manager', () => {
     const onUpdate = vi.fn();
     const onDelete = vi.fn();
     render(
-      <RuleManager
+      <RuleSummaryList
         rules={[rules[0]!]}
         categories={[
           { value: 'groceries', label: 'groceries' },
@@ -105,13 +108,15 @@ describe('rule manager', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /SPC\.CAFE/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Delete rule' }));
+    expect(screen.getByText(/This cannot be undone/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' }));
     expect(onDelete).toHaveBeenCalledWith(userRule);
   });
 
   it('imports a validated replacement for editable rules', async () => {
     const onImport = vi.fn();
     render(
-      <RuleManager
+      <RuleSummaryList
         rules={rules}
         categories={[{ value: 'groceries', label: 'groceries' }]}
         rulesToExport={[userRule]}
@@ -127,7 +132,6 @@ describe('rule manager', () => {
       'rules.json',
       { type: 'application/json' },
     );
-    fireEvent.click(screen.getByText('Manage rules'));
     fireEvent.change(screen.getByLabelText('Import rules'), { target: { files: [file] } });
 
     await waitFor(() => {
@@ -148,7 +152,7 @@ describe('rule manager', () => {
       .mockImplementation(() => undefined);
     vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
     render(
-      <RuleManager
+      <RuleSummaryList
         rules={rules}
         categories={[{ value: 'groceries', label: 'groceries' }]}
         rulesToExport={[userRule]}
@@ -159,7 +163,6 @@ describe('rule manager', () => {
       />,
     );
 
-    fireEvent.click(screen.getByText('Manage rules'));
     fireEvent.click(screen.getByRole('button', { name: 'Export rules' }));
 
     expect(createObjectURL).toHaveBeenCalledOnce();
@@ -175,7 +178,7 @@ describe('rule manager', () => {
   it('requires typing delete and supports cancel before removing all user rules', () => {
     const onRemoveAll = vi.fn();
     render(
-      <RuleManager
+      <RuleSummaryList
         rules={[rules[0]!]}
         categories={[{ value: 'groceries', label: 'groceries' }]}
         rulesToExport={[userRule]}
@@ -186,7 +189,6 @@ describe('rule manager', () => {
       />,
     );
 
-    fireEvent.click(screen.getByText('Manage rules'));
     fireEvent.click(screen.getByRole('button', { name: 'Remove all rules' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'OK' })).toBeDisabled();
