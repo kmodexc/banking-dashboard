@@ -14,7 +14,7 @@ import {
   type BarShapeProps,
 } from 'recharts';
 import { money } from '../../utils/format';
-import type { PlanBudgetRow } from '../planViewTypes';
+import type { PlanBudgetRow } from './planViewTypes';
 
 export interface BoxPlotChartRow extends PlanBudgetRow {
   chartLabel: string;

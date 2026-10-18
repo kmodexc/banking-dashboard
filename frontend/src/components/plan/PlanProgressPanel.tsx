@@ -1,10 +1,10 @@
 import type { ReactElement } from 'react';
 import { formatPeriod, money } from '../../utils/format';
-import { PlanBarChart } from '../PlanBarChart';
-import { PlanBoxPlot } from '../PlanBoxPlot';
-import { PlanProgressList } from '../PlanProgressList';
-import type { PlanBudgetRow } from '../planViewTypes';
-import type { PlanView } from '../planViewTypes';
+import { PlanBarChart } from './PlanBarChart';
+import { PlanBoxPlot } from './PlanBoxPlot';
+import { PlanProgressList } from './PlanProgressList';
+import type { PlanBudgetRow } from './planViewTypes';
+import type { PlanView } from './planViewTypes';
 
 export function PlanProgressPanel({
   period,

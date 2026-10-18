@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { OidcClient } from './auth';
 import { getAppConfig } from './config';
-import { AppTabs } from './components/AppTabs';
-import { TabContent, type TabContentProps } from './components/TabContent';
-import type { AppTab } from './components/appTabs';
-import { AuthControls, FilePicker } from './components/AppChrome';
+import { AppTabs } from './components/app/AppTabs';
+import { TabContent, type TabContentProps } from './components/app/TabContent';
+import type { AppTab } from './components/app/appTabs';
+import { AuthControls, FilePicker } from './components/app/AppChrome';
 import type { AuthSnapshot } from './types';
 import { useFinanceWorkspace } from './hooks/useFinanceWorkspace';
 import { useTransactions } from './hooks/useTransactions';

@@ -1,7 +1,7 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import type { BudgetPlan } from '../data/budgets';
 import type { Transaction } from '../types';
-import type { PlanBudgetRow } from '../components/planViewTypes';
+import type { PlanBudgetRow } from '../components/plan/planViewTypes';
 
 function currentPeriod(): string {
   const now = new Date();
