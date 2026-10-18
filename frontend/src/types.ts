@@ -61,6 +61,17 @@ export const TransactionSchema = z
     type: z.string(),
     amount: z.number(),
     category: z.string(),
+    valueDate: z.string().optional(),
+    status: z.string().optional(),
+    paymentMethod: z.string().optional(),
+    counterpartyName: z.string().optional(),
+    counterpartyRole: z.enum(['payer', 'recipient']).optional(),
+    currency: z.string().optional(),
+    originalAmount: z.number().optional(),
+    originalCurrency: z.string().optional(),
+    exchangeRate: z.number().optional(),
+    bankReference: z.string().optional(),
+    balanceAfter: z.number().optional(),
   })
   .strict();
 
@@ -103,6 +114,17 @@ export interface Transaction {
   type: string;
   amount: number;
   category: string;
+  valueDate?: string | undefined;
+  status?: string | undefined;
+  paymentMethod?: string | undefined;
+  counterpartyName?: string | undefined;
+  counterpartyRole?: 'payer' | 'recipient' | undefined;
+  currency?: string | undefined;
+  originalAmount?: number | undefined;
+  originalCurrency?: string | undefined;
+  exchangeRate?: number | undefined;
+  bankReference?: string | undefined;
+  balanceAfter?: number | undefined;
 }
 
 export interface AppConfig {

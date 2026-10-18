@@ -7,6 +7,15 @@ function normalizedHeader(value: string | undefined): string {
     .toLocaleLowerCase();
 }
 
+function parseExchangeRate(value: string | undefined): number | undefined {
+  const normalized = String(value ?? '')
+    .trim()
+    .replace(',', '.');
+  if (!normalized) return undefined;
+  const rate = Number(normalized);
+  return Number.isFinite(rate) ? rate : undefined;
+}
+
 export function isDeutscheBankHeader(columns: string[]): boolean {
   return (
     normalizedHeader(columns[0]) === 'belegdatum' &&
@@ -36,20 +45,34 @@ export function normalizeDeutscheBankRows(rows: string[][], headerIndex: number)
         headerIndex + index + 1,
         'Missing, invalid or ambiguous billed amount',
       );
-    if (columns[7]?.trim().toUpperCase() !== 'EUR')
+    const currency = columns[7]?.trim().toUpperCase();
+    if (currency !== 'EUR')
       throw rowError(columns, headerIndex + index + 1, 'Billed currency must be EUR');
 
-    return [
-      {
-        id: `${date}-${headerIndex + index + 1}`,
-        date,
-        period: date.slice(0, 7),
-        recipient: purpose.split(',')[0]?.trim() ?? '',
-        purpose,
-        type: amount < 0 ? 'Ausgang' : 'Eingang',
-        amount,
-        category: 'unknown',
-      },
-    ];
+    const originalAmount = parseAmount(columns[4]);
+    const originalCurrency = columns[3]?.trim().toUpperCase();
+    const exchangeRate = parseExchangeRate(columns[5]);
+    const counterpartyName = purpose.split(',')[0]?.trim() ?? '';
+    const transaction: Transaction = {
+      id: `${date}-${headerIndex + index + 1}`,
+      date,
+      period: date.slice(0, 7),
+      recipient: counterpartyName,
+      purpose,
+      type: amount < 0 ? 'Ausgang' : 'Eingang',
+      amount,
+      category: 'unknown',
+      counterpartyName,
+      counterpartyRole: amount < 0 ? 'recipient' : 'payer',
+      currency,
+    };
+
+    const valueDate = parseDate(columns[1]);
+    if (valueDate) transaction.valueDate = valueDate;
+    if (Number.isFinite(originalAmount)) transaction.originalAmount = originalAmount;
+    if (originalCurrency) transaction.originalCurrency = originalCurrency;
+    if (exchangeRate !== undefined) transaction.exchangeRate = exchangeRate;
+
+    return [transaction];
   });
 }

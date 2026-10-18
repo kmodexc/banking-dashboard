@@ -1,10 +1,24 @@
 import type { Transaction } from '../../types';
-import { parseAmount, parseDate, rowError } from './parser';
+import { columnValue, normalizedColumn, parseAmount, parseDate, rowError } from './parser';
+
+function isDkbHeader(columns: string[]): boolean {
+  const first = normalizedColumn(columns[0]);
+  return first === 'buchungstag' || first === 'buchungsdatum';
+}
+
+function optionalAmount(value: string, thousandsSeparator: '.' | ',' = '.'): number | undefined {
+  if (!value) return undefined;
+  const amount = parseAmount(value, thousandsSeparator);
+  return Number.isFinite(amount) ? amount : undefined;
+}
 
 export function normalizeDkbRows(rows: string[][]): Transaction[] {
-  const header = rows.find((columns) => columns[0]?.trim().toLowerCase() === 'buchungstag');
+  const header = rows.find(isDkbHeader);
   return rows.flatMap((columns, index): Transaction[] => {
-    const date = parseDate(columns[0]);
+    const isLegacyFormat = header
+      ? normalizedColumn(header[0]) === 'buchungstag'
+      : columns.length === 12;
+    const date = parseDate(columnValue(columns, header, ['Buchungstag', 'Buchungsdatum'], 0));
     if (!date) {
       if (/^\d{1,2}[./]\d{1,2}[./]\d{2,4}[,;\t]/.test(columns[0] ?? ''))
         throw rowError(columns, index, 'Unsupported CSV separator');
@@ -21,25 +35,55 @@ export function normalizeDkbRows(rows: string[][]): Transaction[] {
         'Unexpected column count; check the CSV separator and quoting',
       );
 
-    const isLegacyFormat = columns.length === 12;
-    const amount = parseAmount(isLegacyFormat ? columns[8] : (columns[15] ?? columns[16]), '.');
+    const amountText = columnValue(
+      columns,
+      header,
+      ['Umsatz', 'Betrag (€)', 'Betrag'],
+      isLegacyFormat ? 8 : 15,
+    );
+    const amount = parseAmount(amountText, '.');
     if (!Number.isFinite(amount))
       throw rowError(columns, index, 'Missing, invalid or ambiguous amount');
 
-    const recipient = isLegacyFormat ? columns[4] : columns[3];
-    const purpose = isLegacyFormat ? columns[5] : columns[4];
-    const type = isLegacyFormat ? columns[6] : amount < 0 ? 'Ausgang' : 'Eingang';
-    return [
-      {
-        id: `${date}-${index}`,
-        date,
-        period: date.slice(0, 7),
-        recipient: recipient ?? '',
-        purpose: purpose ?? '',
-        type: type ?? (amount < 0 ? 'Ausgang' : 'Eingang'),
-        amount,
-        category: 'unknown',
-      },
-    ];
+    const isIncome = amount >= 0;
+    const payer = columnValue(columns, header, ['Zahlungspflichtige*r', 'Zahlungspflichtiger']);
+    const recipient = columnValue(
+      columns,
+      header,
+      ['Zahlungsempfänger*in', 'Zahlungsempfänger', 'Empfänger', 'Auftraggeber / Begünstigter'],
+      4,
+    );
+    const counterpartyName = (isIncome ? payer : recipient) || recipient || payer;
+    const type =
+      columnValue(columns, header, ['Art', 'Umsatztyp'], 6) || (isIncome ? 'Eingang' : 'Ausgang');
+    const transaction: Transaction = {
+      id: `${date}-${index}`,
+      date,
+      period: date.slice(0, 7),
+      recipient: counterpartyName,
+      purpose: columnValue(columns, header, ['Zweck', 'Verwendungszweck'], 5),
+      type,
+      amount,
+      category: 'unknown',
+      counterpartyName,
+      counterpartyRole: isIncome ? 'payer' : 'recipient',
+    };
+
+    const valueDate = parseDate(columnValue(columns, header, ['Wertstellung'], 1));
+    const status = columnValue(columns, header, ['Status']);
+    const paymentMethod = columnValue(columns, header, ['Buchungstext'], 2);
+    const bankReference =
+      columnValue(columns, header, ['Kundenreferenz']) ||
+      columnValue(columns, header, ['Mandatsreferenz']) ||
+      columnValue(columns, header, ['Gläubiger-ID']);
+    const balanceAfter = optionalAmount(columnValue(columns, header, ['Saldo'], 7));
+
+    if (valueDate) transaction.valueDate = valueDate;
+    if (status) transaction.status = status;
+    if (paymentMethod) transaction.paymentMethod = paymentMethod;
+    if (bankReference) transaction.bankReference = bankReference;
+    if (balanceAfter !== undefined) transaction.balanceAfter = balanceAfter;
+
+    return [transaction];
   });
 }

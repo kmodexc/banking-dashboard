@@ -27,8 +27,31 @@ describe('CSV parsing', () => {
         type: 'Ausgang',
         amount: -8,
         category: 'unknown',
+        valueDate: '2026-01-02',
+        paymentMethod: 'Kartenzahlung',
+        counterpartyName: 'UNKNOWN SHOP',
+        counterpartyRole: 'recipient',
       },
     ]);
+  });
+
+  it('keeps the payer for DKB income transactions', () => {
+    const rows = parseCsv(
+      [
+        'Buchungsdatum;Wertstellung;Status;Zahlungspflichtige*r;Zahlungsempfänger*in;Verwendungszweck;Umsatztyp;IBAN;Betrag (€);Gläubiger-ID;Mandatsreferenz;Kundenreferenz',
+        '02.01.2026;02.01.2026;Gebucht;EMPLOYER;;Monthly salary;Eingang;;2.500,00;;;',
+      ].join('\n'),
+    );
+
+    expect(normalizeRows(rows)[0]).toMatchObject({
+      recipient: 'EMPLOYER',
+      counterpartyName: 'EMPLOYER',
+      counterpartyRole: 'payer',
+      type: 'Eingang',
+      amount: 2500,
+      status: 'Gebucht',
+      valueDate: '2026-01-02',
+    });
   });
 
   it('normalizes DKB date variants', () => {
@@ -61,6 +84,13 @@ describe('CSV parsing', () => {
         type: 'Ausgang',
         amount: -2.99,
         category: 'unknown',
+        valueDate: '2026-09-28',
+        counterpartyName: 'APPLE.COM/BILL',
+        counterpartyRole: 'recipient',
+        currency: 'EUR',
+        originalAmount: -2.99,
+        originalCurrency: 'EUR',
+        exchangeRate: 1,
       },
       {
         id: '2026-09-03-6',
@@ -71,8 +101,32 @@ describe('CSV parsing', () => {
         type: 'Ausgang',
         amount: -8.4,
         category: 'unknown',
+        valueDate: '2026-09-03',
+        counterpartyName: 'Mol*WeWash GmbH',
+        counterpartyRole: 'recipient',
+        currency: 'EUR',
+        originalAmount: -8.4,
+        originalCurrency: 'EUR',
+        exchangeRate: 1,
       },
     ]);
+  });
+
+  it('keeps Deutsche Bank foreign-currency conversion details', () => {
+    const rows = parseCsv(
+      [
+        'Belegdatum;Eingangstag;Verwendungszweck;Fremdwährung;Betrag;Kurs;Betrag;Währung',
+        '25.9.2026;28.9.2026;SHOP, New York, USA;USD;-100;0,92;-92;EUR',
+      ].join('\n'),
+    );
+
+    expect(normalizeRows(rows)[0]).toMatchObject({
+      amount: -92,
+      currency: 'EUR',
+      originalAmount: -100,
+      originalCurrency: 'USD',
+      exchangeRate: 0.92,
+    });
   });
 
   it('parses the checked-in DKB example export', async () => {
@@ -90,6 +144,11 @@ describe('CSV parsing', () => {
         type: 'Ausgang',
         amount: -35.41,
         category: 'unknown',
+        valueDate: '2026-09-30',
+        status: 'Gebucht',
+        counterpartyName: 'EDEKA',
+        counterpartyRole: 'recipient',
+        bankReference: '23456',
       },
     ]);
   });
@@ -109,16 +168,30 @@ describe('CSV parsing', () => {
         type: 'Ausgang',
         amount: -2.99,
         category: 'unknown',
+        valueDate: '2026-09-28',
+        counterpartyName: 'APPLE.COM/BILL',
+        counterpartyRole: 'recipient',
+        currency: 'EUR',
+        originalAmount: -2.99,
+        originalCurrency: 'EUR',
+        exchangeRate: 1,
       },
       {
         id: '2026-09-03-6',
         date: '2026-09-03',
         period: '2026-09',
         recipient: 'Mol*WeWash GmbH',
-        purpose: 'Mol*WeWash GmbH, 80336 9800939274266, DEU',
+        purpose: 'Mol*WeWash GmbH, 1234 1234, DEU',
         type: 'Ausgang',
         amount: -8.4,
         category: 'unknown',
+        valueDate: '2026-09-03',
+        counterpartyName: 'Mol*WeWash GmbH',
+        counterpartyRole: 'recipient',
+        currency: 'EUR',
+        originalAmount: -8.4,
+        originalCurrency: 'EUR',
+        exchangeRate: 1,
       },
     ]);
   });

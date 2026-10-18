@@ -1,5 +1,32 @@
 const sourceRows = new WeakMap<string[], { line: number; text: string }>();
 
+export function normalizedColumn(value: string | undefined): string {
+  return String(value ?? '')
+    .trim()
+    .toLocaleLowerCase();
+}
+
+export function columnValue(
+  columns: string[],
+  header: string[] | undefined,
+  aliases: string[],
+  fallbackIndex?: number,
+): string {
+  const index =
+    header?.findIndex((column) =>
+      aliases.some((alias) => normalizedColumn(column) === normalizedColumn(alias)),
+    ) ?? -1;
+  const value =
+    index >= 0
+      ? columns[index]
+      : header
+        ? ''
+        : fallbackIndex === undefined
+          ? ''
+          : columns[fallbackIndex];
+  return String(value ?? '').trim();
+}
+
 export function rowError(columns: string[], index: number, message: string): Error {
   const source = sourceRows.get(columns);
   return new Error(
