@@ -1,64 +1,127 @@
 .summary {
   display: grid;
-  gap: 0.65rem;
+  gap: 1rem;
   margin: 1.4rem 0;
-  padding: 1rem;
-  border-radius: 10px;
+  padding: 1.15rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
   background: var(--wash);
+  box-shadow: 0 8px 20px #17202a0a;
 }
 
-.main {
+.header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1rem;
+}
+
+.identity {
   display: grid;
   min-width: 0;
-  gap: 0.15rem;
+  gap: 0.22rem;
 }
 
-.main strong,
-.main span {
+.kicker,
+.amountLabel,
+.metaLabel,
+.details dt {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.recipient,
+.purpose {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.main span {
+.recipient {
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.purpose {
   color: var(--muted);
+}
+
+.amount {
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+  text-align: right;
+}
+
+.amountLabel {
+  letter-spacing: 0.05em;
+}
+
+.amountValue {
+  font-size: 1.55rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.expense .amountValue {
+  color: #b54732;
+}
+
+.income .amountValue {
+  color: #18794e;
 }
 
 .meta {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.7rem;
-  color: var(--muted);
-  font-size: 0.78rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
 }
 
-.amount {
-  font-size: 1.55rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
+.metaItem {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 0.8rem;
 }
 
 .details {
   display: grid;
-  gap: 0.4rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
   margin: 0;
 }
 
 .details > div {
-  display: grid;
-  grid-template-columns: 7.3rem minmax(0, 1fr);
-  gap: 1rem;
-}
-
-.details dt {
-  color: var(--muted);
-  font-size: 0.78rem;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
 }
 
 .details dd {
-  min-width: 0;
-  margin: 0;
+  margin: 0.15rem 0 0;
   overflow-wrap: anywhere;
   font-weight: 600;
+}
+
+@media (max-width: 520px) {
+  .header,
+  .details {
+    grid-template-columns: 1fr;
+  }
+
+  .amount {
+    justify-items: start;
+    text-align: left;
+  }
 }

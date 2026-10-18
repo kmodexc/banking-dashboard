@@ -99,6 +99,9 @@ export function TransactionDetailsModal({
             ) : (
               <p className="muted">Income is not categorized.</p>
             )}
+          </div>
+          <div className="detail-side">
+            <SearchPreview recipient={transaction.recipient} purpose={transaction.purpose} />
             {transaction.type === 'Ausgang' && rulesController && (
               <div className="transaction-rule-match">
                 <span className="category-editor-label">Categorization rule</span>
@@ -117,7 +120,6 @@ export function TransactionDetailsModal({
               </div>
             )}
           </div>
-          <SearchPreview recipient={transaction.recipient} purpose={transaction.purpose} />
         </div>
       </section>
     </div>
