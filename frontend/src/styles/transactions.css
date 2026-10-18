@@ -28,6 +28,26 @@
   font-weight: 750;
   font-variant-numeric: tabular-nums;
 }
+.transaction-summary-details {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+.transaction-summary-details > div {
+  display: grid;
+  grid-template-columns: 7.3rem minmax(0, 1fr);
+  gap: 1rem;
+}
+.transaction-summary-details dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.transaction-summary-details dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
 .details-modal .transaction-summary {
   margin: 1.4rem 0;
   padding: 1rem;

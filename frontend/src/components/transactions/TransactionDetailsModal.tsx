@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { matchesRule, ruleKey } from '../../data/rules';
 import type { CategoryRule, Transaction } from '../../types';
-import { formatPeriod } from '../../utils/format';
 import { RuleForm } from '../rules/RuleForm';
 import type { RulesController } from '../rules/ruleTypes';
 import { SearchPreview } from '../shared/SearchPreview';
@@ -79,16 +78,6 @@ export function TransactionDetailsModal({
         <div className="detail-grid">
           <div className="detail-column">
             <TransactionSummary transaction={transaction} />
-            <dl className="detail-list">
-              <div>
-                <dt>Period</dt>
-                <dd>{formatPeriod(transaction.period)}</dd>
-              </div>
-              <div>
-                <dt>Transaction ID</dt>
-                <dd>{transaction.id}</dd>
-              </div>
-            </dl>
             {transaction.type === 'Ausgang' ? (
               <div className="category-editor">
                 <span className="category-editor-label">Category</span>

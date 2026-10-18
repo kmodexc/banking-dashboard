@@ -56,25 +56,6 @@
 .income-text {
   color: #18794e;
 }
-.detail-list {
-  margin: 0;
-}
-.detail-list > div {
-  display: grid;
-  grid-template-columns: 7.3rem 1fr;
-  gap: 1rem;
-  padding: 0.65rem 0;
-  border-bottom: 1px solid var(--line);
-}
-.detail-list dt {
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-.detail-list dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-weight: 600;
-}
 .category-editor {
   margin: 1.2rem 0 0;
 }

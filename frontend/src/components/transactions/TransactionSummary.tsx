@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { Transaction } from '../../types';
-import { formatDate, money } from '../../utils/format';
+import { formatDate, formatPeriod, money } from '../../utils/format';
 
 export function TransactionSummary({ transaction }: { transaction: Transaction }): ReactElement {
   return (
@@ -20,6 +20,16 @@ export function TransactionSummary({ transaction }: { transaction: Transaction }
           {money(transaction.amount)}
         </span>
       </div>
+      <dl className="transaction-summary-details">
+        <div>
+          <dt>Period</dt>
+          <dd>{formatPeriod(transaction.period)}</dd>
+        </div>
+        <div>
+          <dt>Transaction ID</dt>
+          <dd>{transaction.id}</dd>
+        </div>
+      </dl>
     </div>
   );
 }

@@ -52,6 +52,8 @@ describe('transaction details rule matching', () => {
       />,
     );
 
+    expect(screen.getByText('January 2026')).toBeInTheDocument();
+    expect(screen.getByText('expense-1')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /SPC\.CAFE/ }));
 
     expect(screen.getByRole('heading', { name: 'Edit rule' })).toBeInTheDocument();
