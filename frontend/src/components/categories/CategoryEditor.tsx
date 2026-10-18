@@ -100,8 +100,8 @@ export function CategoryEditor({
         <div>
           <h2>Categories</h2>
           <p className="muted">
-            All categories are personal. Your changes apply only to you and stay in this browser
-            until you choose private online storage.
+            All categories are personal. Your changes apply only to you and stay in this browser.
+            Configure private synchronization on the Account page.
           </p>
         </div>
         <CategoryActions

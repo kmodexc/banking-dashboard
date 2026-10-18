@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react';
 import type { OidcClient } from '../../auth';
 import type { BudgetPlan } from '../../data/budgets';
-import type { BudgetPreferences } from '../../data/preferences';
 import type { CategoryEntry, UserCategoryState } from '../../data/categories';
 import type { AccountProps } from '../account/types';
 import type {
@@ -10,7 +9,6 @@ import type {
   ClassificationRule,
   ManagedRule,
   RuleCategoryOption,
-  RulePreferences,
   Transaction,
 } from '../../types';
 import { Account } from '../account/Account';
@@ -36,13 +34,8 @@ interface PlanView {
   transactions: Transaction[];
   categories: string[];
   initialPeriod: string;
-  auth: AuthSnapshot;
   budgets: BudgetPlan;
-  budgetPreferences: BudgetPreferences;
-  budgetSyncStatus: string;
   onBudgetsChange: (next: BudgetPlan) => void;
-  onBudgetPreferencesChange: (next: BudgetPreferences) => void;
-  onDeleteServerBudgets: () => void;
 }
 
 interface UnknownView {
@@ -57,18 +50,12 @@ interface UnknownView {
 }
 
 interface CategoriesView {
-  auth: AuthSnapshot;
   entries: CategoryEntry[];
   state: UserCategoryState;
   onAdd: (name: string) => void;
   onRename: (entry: CategoryEntry, name: string) => void;
   onDelete: (entry: CategoryEntry) => void;
   onImport: (next: UserCategoryState) => void;
-  rulePreferences: RulePreferences;
-  onRulePreferencesChange: (next: RulePreferences) => void;
-  onSyncRules: () => void;
-  onDeleteServerRules: () => void;
-  ruleSyncStatus: string;
   ruleManager: {
     rules: ManagedRule[];
     categories: RuleCategoryOption[];
@@ -115,18 +102,12 @@ export function TabContent({
     case 'categories':
       return (
         <Categories
-          auth={categories.auth}
           entries={categories.entries}
           state={categories.state}
           onAdd={categories.onAdd}
           onRename={categories.onRename}
           onDelete={categories.onDelete}
           onImport={categories.onImport}
-          rulePreferences={categories.rulePreferences}
-          onRulePreferencesChange={categories.onRulePreferencesChange}
-          onSyncRules={categories.onSyncRules}
-          onDeleteServerRules={categories.onDeleteServerRules}
-          ruleSyncStatus={categories.ruleSyncStatus}
         >
           <RuleManager {...categories.ruleManager} />
         </Categories>

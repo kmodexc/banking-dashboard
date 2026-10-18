@@ -200,7 +200,6 @@ describe('dashboard UI', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add category' }));
     expect(screen.getByLabelText('groceries category name')).toBeInTheDocument();
     expect(localStorage.getItem('dkb-dashboard-user-categories-v1')).toContain('groceries');
-    expect(screen.getByText(/Sign in above to enable private online storage/)).toBeInTheDocument();
   });
 
   it('shows account storage controls before transactions are imported', () => {
@@ -212,6 +211,13 @@ describe('dashboard UI', () => {
     expect(screen.getByText('0 loaded')).toBeInTheDocument();
     expect(screen.getByText('Never uploaded')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Delete private budgets' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Delete private categories and rules' }),
+    ).toBeDisabled();
     expect(screen.getByRole('checkbox', { name: /Synchronize budgets privately/ })).toBeDisabled();
+    expect(
+      screen.getByRole('checkbox', { name: /Synchronize categories and rules privately/ }),
+    ).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /Use shared community rules/ })).toBeDisabled();
   });
 });

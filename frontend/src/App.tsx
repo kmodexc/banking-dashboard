@@ -63,7 +63,6 @@ export function App(): ReactElement {
     removePrivateServerRules,
     removeCommunityRules,
     replaceLocalRules,
-    replaceRules,
     rulePreferences,
     ruleSyncStatus,
     serverCategoryCount,
@@ -103,13 +102,8 @@ export function App(): ReactElement {
       transactions,
       categories,
       initialPeriod: activePeriod,
-      auth,
       budgets: budgetPlan,
-      budgetPreferences,
-      budgetSyncStatus,
       onBudgetsChange: updateBudgetPlan,
-      onBudgetPreferencesChange: updateBudgetPreferences,
-      onDeleteServerBudgets: () => void deleteServerBudgets(),
     },
     unknown: {
       transactions,
@@ -122,18 +116,12 @@ export function App(): ReactElement {
       userRules: categorizedUserRules,
     },
     categories: {
-      auth,
       entries: categoryEntries,
       state: userCategoryState,
       onAdd: addUserCategory,
       onRename: renameUserCategory,
       onDelete: deleteUserCategory,
       onImport: updateUserCategories,
-      rulePreferences,
-      onRulePreferencesChange: updateRulePreferences,
-      onSyncRules: () => void replaceRules(userRules, userCategoryState),
-      onDeleteServerRules: () => void removePrivateServerRules(),
-      ruleSyncStatus,
       ruleManager: {
         rules: managedRules,
         categories: ruleCategoryOptions,
@@ -202,7 +190,7 @@ export function App(): ReactElement {
         {ruleSyncError && (
           <section id="rule-sync-error" className="panel notice" role="alert" aria-live="assertive">
             <strong>Rule synchronization warning:</strong> {ruleSyncStatus} Your local rules are
-            still available. Open Categories and use “Sync selected rules now” to retry.
+            still available. Open Account to review synchronization settings.
           </section>
         )}
         {!transactions.length ? (

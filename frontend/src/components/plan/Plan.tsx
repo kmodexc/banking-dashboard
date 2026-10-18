@@ -1,10 +1,8 @@
 import { useState, type ReactElement } from 'react';
 import type { BudgetPlan } from '../../data/budgets';
-import type { BudgetPreferences } from '../../data/preferences';
-import type { AuthSnapshot, Transaction } from '../../types';
+import type { Transaction } from '../../types';
 import { usePlanData } from '../../hooks/usePlanData';
 import { BudgetEditor, type BudgetMode } from './BudgetEditor';
-import { BudgetStorageSettings } from './BudgetStorageSettings';
 import { PeriodHeader } from '../shared/PeriodHeader';
 import { PlanProgressPanel } from './PlanProgressPanel';
 import type { PlanView } from './planViewTypes';
@@ -13,24 +11,14 @@ export function Plan({
   transactions,
   categories,
   initialPeriod,
-  auth,
   budgets,
-  budgetPreferences,
-  budgetSyncStatus,
   onBudgetsChange,
-  onBudgetPreferencesChange,
-  onDeleteServerBudgets,
 }: {
   transactions: Transaction[];
   categories: string[];
   initialPeriod: string;
-  auth: AuthSnapshot;
   budgets: BudgetPlan;
-  budgetPreferences: BudgetPreferences;
-  budgetSyncStatus: string;
   onBudgetsChange: (next: BudgetPlan) => void;
-  onBudgetPreferencesChange: (next: BudgetPreferences) => void;
-  onDeleteServerBudgets: () => void;
 }): ReactElement {
   const [mode, setMode] = useState<BudgetMode>('monthly');
   const [view, setView] = useState<PlanView>('list');
@@ -76,14 +64,6 @@ export function Plan({
         mode={mode}
         onModeChange={setMode}
         onBudgetsChange={onBudgetsChange}
-      />
-
-      <BudgetStorageSettings
-        auth={auth}
-        budgetPreferences={budgetPreferences}
-        budgetSyncStatus={budgetSyncStatus}
-        onBudgetPreferencesChange={onBudgetPreferencesChange}
-        onDeleteServerBudgets={onDeleteServerBudgets}
       />
     </section>
   );
