@@ -12,7 +12,13 @@ import {
   loadRulePreferences,
   saveRulePreferences,
 } from '../data/preferences';
-import { deduplicateRules, loadLocalRules, ruleKey, saveLocalRules } from '../data/rules';
+import {
+  deduplicateRules,
+  loadLocalRules,
+  ruleKey,
+  saveLocalRules,
+  withCreatedAt,
+} from '../data/rules';
 import type { UserCategoryState } from '../data/categories';
 import { LEGACY_COMMUNITY_CATEGORIES } from '../types';
 import type { AuthSnapshot, CategoryRule, ClassificationRule, RulePreferences } from '../types';
@@ -221,20 +227,20 @@ export function useRuleSync(
   }
 
   function addRule(rule: CategoryRule): void {
-    saveRules([rule, ...userRules]);
+    saveRules([withCreatedAt(rule), ...userRules]);
   }
 
   function addRules(newRules: ClassificationRule[]): void {
     saveRules([
-      ...newRules.filter(
-        (rule) => !userRules.some((existing) => ruleKey(existing) === ruleKey(rule)),
-      ),
+      ...newRules
+        .map(withCreatedAt)
+        .filter((rule) => !userRules.some((existing) => ruleKey(existing) === ruleKey(rule))),
       ...userRules,
     ]);
   }
 
   function replaceLocalRules(nextRules: CategoryRule[]): void {
-    saveRules(nextRules);
+    saveRules(nextRules.map(withCreatedAt));
   }
 
   function updateUserRule(previous: CategoryRule, next: CategoryRule): void {

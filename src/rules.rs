@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use sqlx::{PgPool, Row};
+use sqlx::types::chrono::{DateTime, Utc};
 
 use crate::models::{BudgetPlan, CategoryState, GLOBAL_CATEGORIES, Rule};
 
@@ -17,6 +18,7 @@ struct DbRule {
     category: String,
     rule_column: String,
     confidence: Option<f64>,
+    created_at: DateTime<Utc>,
 }
 
 impl RuleStore {
@@ -64,8 +66,8 @@ impl RuleStore {
 
     pub async fn private(&self, subject: &str) -> Result<Vec<Rule>, sqlx::Error> {
         let rows = sqlx::query_as::<_, DbRule>(
-            "SELECT keyword, category, rule_column, confidence
-             FROM private_rules WHERE subject = $1 ORDER BY id DESC",
+            "SELECT keyword, category, rule_column, confidence, created_at
+             FROM private_rules WHERE subject = $1 ORDER BY created_at DESC, id DESC",
         )
         .bind(subject)
         .fetch_all(&self.pool)
@@ -96,8 +98,8 @@ impl RuleStore {
         for rule in rules {
             sqlx::query(
                 "INSERT INTO private_rules
-                 (subject, keyword, category, rule_column, confidence)
-                 VALUES ($1, $2, $3, $4, $5)
+                (subject, keyword, category, rule_column, confidence, created_at)
+                 VALUES ($1, $2, $3, $4, $5, COALESCE($6, now()))
                  ON CONFLICT (subject, lower(keyword), lower(category), rule_column)
                  DO UPDATE SET confidence = EXCLUDED.confidence",
             )
@@ -106,6 +108,7 @@ impl RuleStore {
             .bind(&rule.category)
             .bind(&rule.rule_column)
             .bind(rule.confidence)
+            .bind(rule.created_at)
             .execute(&mut *transaction)
             .await?;
         }
@@ -200,8 +203,8 @@ impl RuleStore {
 
     pub async fn community(&self) -> Result<Vec<Rule>, sqlx::Error> {
         let rows = sqlx::query_as::<_, DbRule>(
-            "SELECT keyword, category, rule_column, confidence
-             FROM community_rules ORDER BY id DESC",
+            "SELECT keyword, category, rule_column, confidence, created_at
+             FROM community_rules ORDER BY created_at DESC, id DESC",
         )
         .fetch_all(&self.pool)
         .await?;
@@ -217,14 +220,15 @@ impl RuleStore {
         for rule in rules {
             let inserted = sqlx::query(
                 "INSERT INTO community_rules
-                 (keyword, category, rule_column, confidence)
-                 VALUES ($1, $2, $3, $4)
+                 (keyword, category, rule_column, confidence, created_at)
+                 VALUES ($1, $2, $3, $4, COALESCE($5, now()))
                  ON CONFLICT DO NOTHING RETURNING id",
             )
             .bind(&rule.keyword)
             .bind(&rule.category)
             .bind(&rule.rule_column)
             .bind(rule.confidence)
+            .bind(rule.created_at)
             .fetch_optional(&mut *transaction)
             .await?;
             let rule_id = match inserted {
@@ -317,14 +321,15 @@ impl RuleStore {
                     }
                     sqlx::query(
                         "INSERT INTO private_rules
-                         (subject, keyword, category, rule_column, confidence)
-                         VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING",
+                         (subject, keyword, category, rule_column, confidence, created_at)
+                         VALUES ($1, $2, $3, $4, $5, COALESCE($6, now())) ON CONFLICT DO NOTHING",
                     )
                     .bind(subject)
                     .bind(&rule.keyword)
                     .bind(&rule.category)
                     .bind(&rule.rule_column)
                     .bind(rule.confidence)
+                    .bind(rule.created_at)
                     .execute(&mut *transaction)
                     .await?;
                 }
@@ -345,13 +350,14 @@ impl RuleStore {
                 }
                 let inserted = sqlx::query(
                     "INSERT INTO community_rules
-                     (keyword, category, rule_column, confidence)
-                     VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING id",
+                     (keyword, category, rule_column, confidence, created_at)
+                     VALUES ($1, $2, $3, $4, COALESCE($5, now())) ON CONFLICT DO NOTHING RETURNING id",
                 )
                 .bind(&rule.keyword)
                 .bind(&rule.category)
                 .bind(&rule.rule_column)
                 .bind(rule.confidence)
+                .bind(rule.created_at)
                 .fetch_optional(&mut *transaction)
                 .await?;
                 let rule_id = match inserted {
@@ -403,6 +409,7 @@ impl From<DbRule> for Rule {
             category: value.category,
             rule_column: value.rule_column,
             confidence: value.confidence,
+            created_at: Some(value.created_at),
         }
     }
 }

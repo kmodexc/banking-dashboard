@@ -4,6 +4,10 @@ import type { CategoryRule, RuleColumn, Transaction } from '../types';
 export const RULES_KEY = 'dkb-dashboard-rules-v1';
 export const CATEGORY_OVERRIDES_KEY = 'dkb-dashboard-category-overrides-v1';
 
+export function withCreatedAt<T extends CategoryRule>(rule: T): T {
+  return rule.createdAt ? rule : { ...rule, createdAt: new Date().toISOString() };
+}
+
 export function parseRules(value: string | null): CategoryRule[] {
   if (!value) return [];
   try {

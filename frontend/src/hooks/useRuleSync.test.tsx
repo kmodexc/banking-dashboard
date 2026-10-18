@@ -125,6 +125,14 @@ function requestBody(init: RequestInit | undefined): unknown {
   return JSON.parse(body) as unknown;
 }
 
+function withoutCreatedAt(rules: CategoryRule[]): CategoryRule[] {
+  return rules.map((rule) => {
+    const { createdAt, ...withoutTimestamp } = rule;
+    void createdAt;
+    return withoutTimestamp;
+  });
+}
+
 function preferenceValues(preferences: SyncPreferences): SyncPreferences {
   return {
     storePrivateRules: preferences.storePrivateRules,
@@ -191,7 +199,8 @@ describe('useRuleSync', () => {
       const privateUpload = calls.find(
         ({ url, init }) => url.endsWith('/api/rules') && init?.method === 'PUT',
       );
-      expect(requestBody(privateUpload?.init)).toEqual({ rules: expectedPrivate });
+      const body = requestBody(privateUpload?.init) as { rules: CategoryRule[] };
+      expect(withoutCreatedAt(body.rules)).toEqual(expectedPrivate);
     }
     if (preferences.contributeRules) {
       await waitFor(() =>
@@ -204,7 +213,8 @@ describe('useRuleSync', () => {
       const communityUpload = calls.find(
         ({ url, init }) => url.endsWith('/api/community/rules') && init?.method === 'POST',
       );
-      expect(requestBody(communityUpload?.init)).toEqual({ rules: expectedCommunity });
+      const body = requestBody(communityUpload?.init) as { rules: CategoryRule[] };
+      expect(withoutCreatedAt(body.rules)).toEqual(expectedCommunity);
     }
     if (!preferences.storePrivateRules) {
       expect(
@@ -446,7 +456,7 @@ describe('useRuleSync', () => {
 
       act(() => view.result.current.addRule(privateRule));
       await expectConfiguredSync(preferences, [privateRule], [], false);
-      expect(view.result.current.localRules).toEqual([privateRule]);
+      expect(withoutCreatedAt(view.result.current.localRules)).toEqual([privateRule]);
     },
   );
 
@@ -467,7 +477,7 @@ describe('useRuleSync', () => {
       if (!imported) throw new Error('test fixture should be valid');
       act(() => view.result.current.replaceLocalRules(imported));
       await expectConfiguredSync(preferences, imported, [globalRule], false);
-      expect(view.result.current.localRules).toEqual(imported);
+      expect(withoutCreatedAt(view.result.current.localRules)).toEqual(imported);
     },
   );
 
@@ -565,7 +575,7 @@ describe('useRuleSync', () => {
 
       act(() => view.result.current.addRules([aiRule]));
       await expectConfiguredSync(preferences, [aiRule], [aiRule], false);
-      expect(view.result.current.localRules).toEqual([aiRule]);
+      expect(withoutCreatedAt(view.result.current.localRules)).toEqual([aiRule]);
     },
   );
 

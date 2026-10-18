@@ -24,6 +24,7 @@ export const CategoryRuleSchema = z
     category: z.string().min(1).max(80),
     column: RuleColumnSchema,
     confidence: z.number().min(0).max(1).optional(),
+    createdAt: z.string().datetime({ offset: true }).optional(),
   })
   .strict();
 export type CategoryRule = z.infer<typeof CategoryRuleSchema>;

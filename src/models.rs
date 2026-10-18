@@ -1,6 +1,33 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use sqlx::types::chrono::{DateTime, Utc};
+
+mod optional_rfc3339 {
+    use super::{DateTime, Utc};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S>(value: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        value.map(|date| date.to_rfc3339()).serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = Option::<String>::deserialize(deserializer)?;
+        value
+            .map(|value| {
+                DateTime::parse_from_rfc3339(&value)
+                    .map(|date| date.with_timezone(&Utc))
+                    .map_err(serde::de::Error::custom)
+            })
+            .transpose()
+    }
+}
 
 pub const GLOBAL_CATEGORIES: [&str; 10] = [
     "groceries",
@@ -15,7 +42,7 @@ pub const GLOBAL_CATEGORIES: [&str; 10] = [
     "mix",
 ];
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Rule {
     pub keyword: String,
     pub category: String,
@@ -23,6 +50,22 @@ pub struct Rule {
     pub rule_column: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub confidence: Option<f64>,
+    #[serde(
+        rename = "createdAt",
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "optional_rfc3339"
+    )]
+    pub created_at: Option<DateTime<Utc>>,
+}
+
+impl PartialEq for Rule {
+    fn eq(&self, other: &Self) -> bool {
+        self.keyword == other.keyword
+            && self.category == other.category
+            && self.rule_column == other.rule_column
+            && self.confidence == other.confidence
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -183,6 +226,7 @@ impl ClassificationRule {
             category: self.category.clone(),
             rule_column: self.rule_column.clone(),
             confidence: Some(self.confidence),
+            created_at: None,
         };
         rule.validate()?;
         if !categories.iter().any(|category| category == &self.category) {
@@ -272,6 +316,7 @@ mod tests {
             category: "groceries".into(),
             rule_column: "recipient".into(),
             confidence: Some(0.9),
+            created_at: None,
         }
     }
 

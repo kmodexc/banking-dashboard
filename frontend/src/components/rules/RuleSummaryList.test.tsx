@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { CategoryRule } from '../../types';
 import { RuleSummaryList } from './RuleSummaryList';
@@ -31,5 +31,38 @@ describe('rule summary list', () => {
     render(<RuleSummaryList rules={[]} />);
 
     expect(screen.getByText('No rules added yet.')).toBeInTheDocument();
+  });
+
+  it('sorts rules and opens a details modal', () => {
+    const newestRuleWithDate: CategoryRule = {
+      ...newestRule,
+      createdAt: '2026-01-02T12:00:00.000Z',
+    };
+    const olderRuleWithDate: CategoryRule = {
+      ...olderRule,
+      createdAt: '2026-01-01T12:00:00.000Z',
+    };
+    render(<RuleSummaryList rules={[olderRuleWithDate, newestRuleWithDate]} />);
+
+    const list = screen.getByRole('list', { name: 'Recently added rules' });
+    expect(list.querySelector('li')).toHaveTextContent('NEW SHOP');
+    fireEvent.change(screen.getByLabelText('Recently added rules sort order'), {
+      target: { value: 'category' },
+    });
+    expect(list.querySelector('li')).toHaveTextContent('OLD SHOP');
+
+    fireEvent.change(screen.getByLabelText('Recently added rules sort order'), {
+      target: { value: 'name' },
+    });
+    expect(list.querySelector('li')).toHaveTextContent('NEW SHOP');
+
+    fireEvent.click(screen.getByRole('button', { name: /OLD SHOP/ }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'OLD SHOP' })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('dialog')).getByText('Jan 1, 2026, 12:00 PM'),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close rule details' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

@@ -24,7 +24,7 @@ export function LocalRuleForm({
   function submitRule(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     const result = CategoryRuleSchema.safeParse({ keyword, category, column });
-    if (result.success) onAddRule(result.data);
+    if (result.success) onAddRule({ ...result.data, createdAt: new Date().toISOString() });
   }
 
   return (

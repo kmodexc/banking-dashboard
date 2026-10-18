@@ -7,6 +7,7 @@ fn rule(keyword: &str, category: &str, column: &str, confidence: Option<f64>) ->
         category: category.into(),
         rule_column: column.into(),
         confidence,
+        created_at: None,
     }
 }
 

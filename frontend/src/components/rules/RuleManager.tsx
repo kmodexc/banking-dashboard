@@ -2,8 +2,8 @@ import type { ReactElement } from 'react';
 import type { CategoryRule, ManagedRule, RuleCategoryOption } from '../../types';
 import { useRuleManager } from '../../hooks/useRuleManager';
 import { RuleDeleteDialog } from './RuleDeleteDialog';
-import { RuleList } from './RuleList';
 import { RuleManagerToolbar } from './RuleManagerToolbar';
+import { RuleSummaryList } from './RuleSummaryList';
 
 export type { ManagedRule, RuleCategoryOption } from '../../types';
 
@@ -38,9 +38,7 @@ export function RuleManager({
       <div className="panel-heading">
         <div>
           <h2>Categorization rules</h2>
-          <p className="muted">
-            All rules are personal and can be changed or deleted. Newest rules are shown first.
-          </p>
+          <p className="muted">All rules are personal and can be changed or deleted.</p>
         </div>
         <span className="muted small">
           Showing {manager.visibleRules.length} of {rules.length}
@@ -56,9 +54,12 @@ export function RuleManager({
         onRemoveAll={manager.openDeleteAllConfirmation}
       />
       {manager.message && <p className="notice category-auth-notice">{manager.message}</p>}
-      <RuleList
+      <RuleSummaryList
         rules={manager.visibleRules}
         categories={categories}
+        listLabel="Categorization rule list"
+        emptyMessage="No rules match this filter."
+        embedded
         editingKey={manager.editingKey}
         draft={manager.draft}
         onStartEditing={manager.startEditing}
@@ -67,7 +68,6 @@ export function RuleManager({
         onCancel={manager.cancelEditing}
         onDelete={manager.deleteRule}
       />
-      {!manager.visibleRules.length && <p className="muted">No rules match this filter.</p>}
       {manager.deleteAllOpen && (
         <RuleDeleteDialog
           confirmation={manager.deleteConfirmation}

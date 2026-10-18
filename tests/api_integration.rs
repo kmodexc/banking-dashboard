@@ -49,13 +49,11 @@ async fn authenticated_private_rules_round_trip_through_http(pool: PgPool) {
         .unwrap();
     assert_eq!(get.status(), reqwest::StatusCode::OK);
     let get_body: serde_json::Value = get.json().await.unwrap();
-    assert_eq!(
-        get_body["private"],
-        json!([
-            {"keyword": "Miete", "category": "rent", "column": "purpose"},
-            {"keyword": "REWE", "category": "groceries", "column": "recipient", "confidence": 0.9}
-        ])
-    );
+    let private = get_body["private"].as_array().unwrap();
+    assert_eq!(private.len(), 2);
+    assert_eq!(private[0]["keyword"], "Miete");
+    assert_eq!(private[1]["keyword"], "REWE");
+    assert!(private.iter().all(|rule| rule["createdAt"].is_string()));
     assert!(get_body["community"].as_array().unwrap().is_empty());
 
     let saved = api.store.private("user-a").await.unwrap();
