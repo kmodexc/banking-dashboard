@@ -83,11 +83,11 @@ describe('plan tab', () => {
       '50',
     );
     expect(screen.getByText('€50.00 spent')).toBeInTheDocument();
-    expect(screen.getByText('Total planned for January 2026').parentElement).toHaveTextContent(
-      '€600.00 / month',
-    );
+    expect(
+      screen.getByText('Total planned for January 2026').closest('.budget-editor-total'),
+    ).toHaveTextContent('€600.00 / month');
 
-    fireEvent.click(screen.getByRole('tab', { name: 'This month' }));
+    fireEvent.click(screen.getByRole('tab', { name: /This month/ }));
     expect(screen.getByText('Using default: €100.00')).toBeInTheDocument();
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Food monthly budget' }), {
       target: { value: '80' },
@@ -98,9 +98,9 @@ describe('plan tab', () => {
       '63',
     );
     expect(screen.getByText('€80.00 planned')).toBeInTheDocument();
-    expect(screen.getByText('Total planned for January 2026').parentElement).toHaveTextContent(
-      '€580.00 / month',
-    );
+    expect(
+      screen.getByText('Total planned for January 2026').closest('.budget-editor-total'),
+    ).toHaveTextContent('€580.00 / month');
     expect(screen.getByText('€80.00 planned').parentElement).toHaveTextContent('month-specific');
 
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Food monthly budget' }), {

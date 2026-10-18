@@ -49,29 +49,9 @@ export function BudgetEditor({
 
   return (
     <article className="panel plan-editor-panel">
-      <div className="plan-mode-switch" role="tablist" aria-label="Budget mode">
-        <button
-          className={`plan-mode-button${mode === 'default' ? ' active' : ''}`}
-          type="button"
-          role="tab"
-          aria-selected={mode === 'default'}
-          onClick={() => onModeChange('default')}
-        >
-          Default budgets
-        </button>
-        <button
-          className={`plan-mode-button${mode === 'monthly' ? ' active' : ''}`}
-          type="button"
-          role="tab"
-          aria-selected={mode === 'monthly'}
-          onClick={() => onModeChange('monthly')}
-        >
-          This month
-        </button>
-      </div>
-
-      <div className="panel-heading">
-        <div>
+      <div className="budget-editor-header">
+        <div className="budget-editor-title">
+          <span className="budget-editor-kicker">Budget setup</span>
           <h2>
             {mode === 'default' ? 'Default monthly budgets' : `${formatPeriod(period)} budgets`}
           </h2>
@@ -81,16 +61,40 @@ export function BudgetEditor({
               : 'Leave a field empty to use the default budget for this category.'}
           </p>
         </div>
-        {mode === 'monthly' && (
-          <button
-            className="button secondary danger-button"
-            type="button"
-            disabled={!Object.keys(monthlyBudgets).length}
-            onClick={() => onBudgetsChange(clearMonthlyBudget(budgets, period))}
-          >
-            Reset month-specific budgets
-          </button>
-        )}
+        <div className="budget-editor-controls">
+          <div className="budget-scope-switch" role="tablist" aria-label="Budget mode">
+            <button
+              className={`budget-scope-button${mode === 'default' ? ' active' : ''}`}
+              type="button"
+              role="tab"
+              aria-selected={mode === 'default'}
+              onClick={() => onModeChange('default')}
+            >
+              <strong>Default budgets</strong>
+              <small>Every month</small>
+            </button>
+            <button
+              className={`budget-scope-button${mode === 'monthly' ? ' active' : ''}`}
+              type="button"
+              role="tab"
+              aria-selected={mode === 'monthly'}
+              onClick={() => onModeChange('monthly')}
+            >
+              <strong>This month</strong>
+              <small>{formatPeriod(period)}</small>
+            </button>
+          </div>
+          {mode === 'monthly' && (
+            <button
+              className="button secondary danger-button budget-reset-button"
+              type="button"
+              disabled={!Object.keys(monthlyBudgets).length}
+              onClick={() => onBudgetsChange(clearMonthlyBudget(budgets, period))}
+            >
+              <span aria-hidden="true">↺</span> Reset month-specific budgets
+            </button>
+          )}
+        </div>
       </div>
       <div className="budget-editor-grid">
         {categories.map((category) => {
@@ -123,12 +127,21 @@ export function BudgetEditor({
       </div>
       {!categories.length && <p className="muted empty-copy">No categories available yet.</p>}
       <div className="budget-editor-total">
-        <span>
-          {mode === 'default'
-            ? 'Total default budget'
-            : `Total planned for ${formatPeriod(period)}`}
-        </span>
-        <strong>{money(budgetEditorTotal)} / month</strong>
+        <div>
+          <span className="budget-editor-total-label">
+            {mode === 'default'
+              ? 'Total default budget'
+              : `Total planned for ${formatPeriod(period)}`}
+          </span>
+          <small>
+            {mode === 'default'
+              ? 'Applied when no monthly override exists'
+              : 'Effective total including defaults'}
+          </small>
+        </div>
+        <strong>
+          {money(budgetEditorTotal)} <span>/ month</span>
+        </strong>
       </div>
     </article>
   );
