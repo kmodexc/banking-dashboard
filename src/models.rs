@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 pub const GLOBAL_CATEGORIES: [&str; 10] = [
@@ -37,6 +39,61 @@ pub struct CategoryState {
     pub categories: Vec<Category>,
     #[serde(rename = "deletedIds", default)]
     pub deleted_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Default)]
+pub struct BudgetPlan {
+    #[serde(default)]
+    pub defaults: HashMap<String, f64>,
+    #[serde(default)]
+    pub monthly: HashMap<String, HashMap<String, f64>>,
+}
+
+impl BudgetPlan {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.defaults.len() > 100 {
+            return Err("default budgets must contain at most 100 categories".into());
+        }
+        if self.monthly.len() > 240 {
+            return Err("monthly budgets must contain at most 240 months".into());
+        }
+        validate_budget_map(&self.defaults, "default budgets")?;
+        for (period, budgets) in &self.monthly {
+            if !valid_budget_period(period) {
+                return Err("budget periods must use YYYY-MM format".into());
+            }
+            if budgets.len() > 100 {
+                return Err(format!("monthly budgets for {period} contain too many categories"));
+            }
+            validate_budget_map(budgets, "monthly budgets")?;
+        }
+        Ok(())
+    }
+}
+
+fn validate_budget_map(budgets: &HashMap<String, f64>, label: &str) -> Result<(), String> {
+    if budgets.keys().any(|category| {
+        let trimmed = category.trim();
+        trimmed.is_empty() || trimmed != category || trimmed.chars().count() > 80
+    }) {
+        return Err(format!("{label} category names must contain 1 to 80 trimmed characters"));
+    }
+    if budgets
+        .values()
+        .any(|amount| !amount.is_finite() || *amount < 0.0 || *amount > 100_000_000.0)
+    {
+        return Err(format!("{label} amounts must be between 0 and 100000000"));
+    }
+    Ok(())
+}
+
+fn valid_budget_period(period: &str) -> bool {
+    let bytes = period.as_bytes();
+    bytes.len() == 7
+        && bytes[4] == b'-'
+        && bytes[..4].iter().all(|digit| digit.is_ascii_digit())
+        && bytes[5..].iter().all(|digit| digit.is_ascii_digit())
+        && (1..=12).contains(&period[5..].parse::<u8>().unwrap_or(0))
 }
 
 impl Rule {
@@ -143,6 +200,17 @@ pub struct RuleCollection {
     pub categories: Option<CategoryState>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct BudgetCollection {
+    pub budgets: BudgetPlan,
+}
+
+impl BudgetCollection {
+    pub fn validate(&self) -> Result<(), String> {
+        self.budgets.validate()
+    }
+}
+
 impl RuleCollection {
     pub fn validate(&self) -> Result<(), String> {
         if self.rules.len() > 500 {
@@ -177,6 +245,11 @@ pub struct RuleCollectionResponse {
     pub private: Vec<Rule>,
     pub community: Vec<Rule>,
     pub categories: Option<CategoryState>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BudgetResponse {
+    pub budgets: Option<BudgetPlan>,
 }
 
 #[derive(Debug, Serialize)]

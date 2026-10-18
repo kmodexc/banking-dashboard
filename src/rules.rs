@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use sqlx::{PgPool, Row};
 
-use crate::models::{CategoryState, GLOBAL_CATEGORIES, Rule};
+use crate::models::{BudgetPlan, CategoryState, GLOBAL_CATEGORIES, Rule};
 
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./db/rust-migrations");
 
@@ -149,6 +149,49 @@ impl RuleStore {
 
     pub async fn delete_private_categories(&self, subject: &str) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM private_categories WHERE subject = $1")
+            .bind(subject)
+            .execute(&self.pool)
+            .await
+            .map(|_| ())
+    }
+
+    pub async fn private_budgets(
+        &self,
+        subject: &str,
+    ) -> Result<Option<BudgetPlan>, sqlx::Error> {
+        let value = sqlx::query_scalar::<_, serde_json::Value>(
+            "SELECT budgets FROM private_budgets WHERE subject = $1",
+        )
+        .bind(subject)
+        .fetch_optional(&self.pool)
+        .await?;
+        value
+            .map(|value| {
+                serde_json::from_value(value).map_err(|error| sqlx::Error::Decode(Box::new(error)))
+            })
+            .transpose()
+    }
+
+    pub async fn replace_private_budgets(
+        &self,
+        subject: &str,
+        budgets: &BudgetPlan,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            "INSERT INTO private_budgets (subject, budgets)
+             VALUES ($1, $2)
+             ON CONFLICT (subject) DO UPDATE
+             SET budgets = EXCLUDED.budgets, updated_at = now()",
+        )
+        .bind(subject)
+        .bind(serde_json::to_value(budgets).expect("budget plan serializes"))
+        .execute(&self.pool)
+        .await
+        .map(|_| ())
+    }
+
+    pub async fn delete_private_budgets(&self, subject: &str) -> Result<(), sqlx::Error> {
+        sqlx::query("DELETE FROM private_budgets WHERE subject = $1")
             .bind(subject)
             .execute(&self.pool)
             .await

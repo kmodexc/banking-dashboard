@@ -1,10 +1,14 @@
 import { useMemo, useState, type ReactElement } from 'react';
 import type { BudgetPlan } from '../data/budgets';
 import { updateBudgetValue } from '../data/budgets';
+import type { BudgetPreferences } from '../data/preferences';
+import type { AuthSnapshot } from '../types';
 import type { Transaction } from '../types';
 import { formatPeriod, money } from '../utils/format';
+import { PeriodHeader } from './PeriodHeader';
 
 type BudgetMode = 'default' | 'monthly';
+const MAX_VISUAL_PERCENTAGE = 150;
 
 function shiftPeriod(period: string, offset: number): string {
   const [year, month] = period.split('-').map(Number);
@@ -26,14 +30,24 @@ export function Plan({
   transactions,
   categories,
   initialPeriod,
+  auth,
   budgets,
+  budgetPreferences,
+  budgetSyncStatus,
   onBudgetsChange,
+  onBudgetPreferencesChange,
+  onDeleteServerBudgets,
 }: {
   transactions: Transaction[];
   categories: string[];
   initialPeriod: string;
+  auth: AuthSnapshot;
   budgets: BudgetPlan;
+  budgetPreferences: BudgetPreferences;
+  budgetSyncStatus: string;
   onBudgetsChange: (next: BudgetPlan) => void;
+  onBudgetPreferencesChange: (next: BudgetPreferences) => void;
+  onDeleteServerBudgets: () => void;
 }): ReactElement {
   const [period, setPeriod] = useState(initialPeriod || currentPeriod());
   const [mode, setMode] = useState<BudgetMode>('monthly');
@@ -83,35 +97,16 @@ export function Plan({
 
   return (
     <section id="plan-tab" className="tab-panel">
-      <div className="period-header plan-period-header">
-        <div>
-          <span className="eyebrow accent-eyebrow">Plan</span>
-          <h2 className="period-title">{formatPeriod(period)}</h2>
-          <p className="muted period-subtitle">
-            {rows.length} outgoing {rows.length === 1 ? 'transaction' : 'transactions'} in this
-            month
-          </p>
-        </div>
-        <div className="period-nav" aria-label="Navigate between plan months">
-          <button
-            className="icon-button"
-            type="button"
-            aria-label="Previous plan month"
-            onClick={() => setPeriod((current) => shiftPeriod(current, -1))}
-          >
-            ←
-          </button>
-          <span className="period-count">{formatPeriod(period)}</span>
-          <button
-            className="icon-button"
-            type="button"
-            aria-label="Next plan month"
-            onClick={() => setPeriod((current) => shiftPeriod(current, 1))}
-          >
-            →
-          </button>
-        </div>
-      </div>
+      <PeriodHeader
+        eyebrow="Plan"
+        period={period}
+        subtitle={`${rows.length} outgoing ${rows.length === 1 ? 'transaction' : 'transactions'} in this month`}
+        navigationLabel="Navigate between plan months"
+        previousLabel="Previous plan month"
+        nextLabel="Next plan month"
+        onPrevious={() => setPeriod((current) => shiftPeriod(current, -1))}
+        onNext={() => setPeriod((current) => shiftPeriod(current, 1))}
+      />
 
       <div className="plan-mode-switch" role="tablist" aria-label="Budget mode">
         <button
@@ -181,6 +176,67 @@ export function Plan({
         )}
       </article>
 
+      <article className="panel budget-storage-panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Private budget storage</h2>
+            <p className="muted">
+              Keep your planned budgets available across devices in your private account copy.
+              Transaction data is never uploaded by this feature.
+            </p>
+          </div>
+        </div>
+        <fieldset className="budget-preferences" disabled={!auth.token}>
+          <legend>Online storage</legend>
+          <label className="preference-choice">
+            <input
+              type="checkbox"
+              checked={budgetPreferences.storePrivateBudgets}
+              onChange={(event) =>
+                onBudgetPreferencesChange({
+                  ...budgetPreferences,
+                  storePrivateBudgets: event.currentTarget.checked,
+                })
+              }
+            />
+            <span>
+              <strong>Save my budgets privately on the server</strong>
+              <small>
+                Enabled by default after sign-in. Turn it off to keep future budget changes only in
+                this browser.
+              </small>
+            </span>
+          </label>
+        </fieldset>
+        {!auth.token && (
+          <p className="notice category-auth-notice">
+            Sign in above to enable private online budget storage. Until then, budgets remain local
+            to this browser.
+          </p>
+        )}
+        {auth.token && (
+          <div className="category-actions rule-storage-actions">
+            <button
+              className="button secondary danger-button"
+              type="button"
+              onClick={onDeleteServerBudgets}
+            >
+              Delete private server budgets
+            </button>
+          </div>
+        )}
+        {budgetSyncStatus && (
+          <p
+            className={`rule-sync-status${budgetSyncStatus.startsWith('Could not ') ? ' rule-sync-status-error' : ''}`}
+            role="status"
+            aria-live="polite"
+          >
+            {budgetSyncStatus.startsWith('Could not ') && <strong>Warning: </strong>}
+            {budgetSyncStatus}
+          </p>
+        )}
+      </article>
+
       <article className="panel plan-progress-panel">
         <div className="panel-heading">
           <div>
@@ -188,6 +244,12 @@ export function Plan({
             <p className="muted">{formatPeriod(period)} · expenses grouped by category</p>
           </div>
           <span className="panel-total">{money(totalSpent)} spent</span>
+        </div>
+        <div className="plan-progress-legend" aria-label="Budget bar legend">
+          <span>
+            <i className="plan-budget-marker" /> 100% budget
+          </span>
+          <span>Bars show spending up to 150%</span>
         </div>
         <div className="plan-summary-grid">
           <div className="plan-summary-card">
@@ -205,8 +267,12 @@ export function Plan({
         </div>
         <div className="plan-progress-list">
           {budgetRows.map((row) => {
-            const width = row.percentage === null ? 0 : Math.min(row.percentage, 100);
+            const width =
+              row.percentage === null
+                ? 0
+                : (Math.min(row.percentage, MAX_VISUAL_PERCENTAGE) / MAX_VISUAL_PERCENTAGE) * 100;
             const isOverBudget = row.percentage !== null && row.percentage > 100;
+            const overage = isOverBudget ? row.spent - row.budget : 0;
             return (
               <div className="plan-progress-row" key={row.category}>
                 <div className="plan-progress-heading">
@@ -220,9 +286,10 @@ export function Plan({
                   role="progressbar"
                   aria-label={`${row.category} spending progress`}
                   aria-valuemin={0}
-                  aria-valuemax={100}
+                  aria-valuemax={MAX_VISUAL_PERCENTAGE}
                   aria-valuenow={row.percentage === null ? 0 : row.percentage}
                 >
+                  <span className="plan-budget-marker" />
                   <span className="plan-progress-fill" style={{ width: `${width}%` }} />
                 </div>
                 <div className="plan-progress-details">
@@ -232,6 +299,9 @@ export function Plan({
                     {row.hasMonthlyBudget && <em> · month-specific</em>}
                   </span>
                 </div>
+                {isOverBudget && (
+                  <strong className="over-budget-text">{money(overage)} over budget</strong>
+                )}
               </div>
             );
           })}

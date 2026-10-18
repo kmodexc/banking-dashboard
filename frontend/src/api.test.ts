@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { classifyTransactions, getStoredRules } from './api';
+import {
+  classifyTransactions,
+  getStoredBudgets,
+  getStoredRules,
+  replaceStoredBudgets,
+} from './api';
 import type { AppConfig } from './types';
 
 const config: AppConfig = { keycloakIssuer: '', keycloakClientId: 'client', apiBaseUrl: '' };
@@ -73,5 +78,38 @@ describe('classification API boundary', () => {
       private: [{ keyword: 'REWE', category: 'groceries', column: 'recipient' }],
       community: [{ keyword: 'DB Bahn', category: 'mobility', column: 'recipient' }],
     });
+  });
+});
+
+describe('budget API boundary', () => {
+  it('loads and stores a private budget plan', async () => {
+    const fetchMock = vi.fn((_: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === 'PUT') {
+        return Promise.resolve(
+          new Response(JSON.stringify({ budgets: { defaults: { Food: 450 }, monthly: {} } }), {
+            status: 200,
+          }),
+        );
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify({ budgets: { defaults: { Food: 450 }, monthly: {} } }), {
+          status: 200,
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getStoredBudgets(config, 'token')).resolves.toEqual({
+      defaults: { Food: 450 },
+      monthly: {},
+    });
+    await replaceStoredBudgets(config, 'token', { defaults: { Food: 450 }, monthly: {} });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/budgets',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ budgets: { defaults: { Food: 450 }, monthly: {} } }),
+      }),
+    );
   });
 });

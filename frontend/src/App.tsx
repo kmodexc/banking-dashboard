@@ -3,12 +3,7 @@ import { OidcClient } from './auth';
 import { getAppConfig } from './config';
 import { readTransactions } from './data/csv';
 import { loadSessionTransactions, saveSessionTransactions } from './data/session';
-import {
-  loadBudgetPlan,
-  renameBudgetCategory,
-  saveBudgetPlan,
-  type BudgetPlan,
-} from './data/budgets';
+import { renameBudgetCategory } from './data/budgets';
 import {
   applyCategoryOverrides,
   applyRules,
@@ -38,6 +33,7 @@ import { RuleManager } from './components/RuleManager';
 import type { ManagedRule, RuleCategoryOption } from './components/RuleManager';
 import type { AuthSnapshot, CategoryRule, Transaction } from './types';
 import { useRuleSync } from './hooks/useRuleSync';
+import { useBudgetSync } from './hooks/useBudgetSync';
 import './styles.css';
 
 const config = getAppConfig();
@@ -68,7 +64,6 @@ export function App(): ReactElement {
   const [categoryOverrides, setCategoryOverrides] = useState<Record<string, string>>(() =>
     loadCategoryOverrides(),
   );
-  const [budgetPlan, setBudgetPlan] = useState<BudgetPlan>(() => loadBudgetPlan());
   const [categoryStateStore, setCategoryStateStore] = useState<{
     userId: string | null;
     state: UserCategoryState;
@@ -91,6 +86,7 @@ export function App(): ReactElement {
       ? categoryStateStore.state
       : loadUserCategoryState(auth.token ? categoryUserId : null);
   const ruleSync = useRuleSync(auth, categoryUserId);
+  const budgetSync = useBudgetSync(auth, categoryUserId);
   const {
     activeRules,
     addRule,
@@ -106,6 +102,14 @@ export function App(): ReactElement {
     updateUserRule,
     userRules,
   } = ruleSync;
+  const {
+    budgetPlan,
+    budgetPreferences,
+    budgetSyncStatus,
+    deleteServerBudgets,
+    updateBudgetPlan,
+    updateBudgetPreferences,
+  } = budgetSync;
   const [rawTransactions, setRawTransactions] = useState<Transaction[]>(() =>
     loadSessionTransactions(),
   );
@@ -214,11 +218,6 @@ export function App(): ReactElement {
       saveCategoryOverrides(next);
       return next;
     });
-  }
-
-  function updateBudgetPlan(next: BudgetPlan): void {
-    saveBudgetPlan(next);
-    setBudgetPlan(next);
   }
 
   function updateUserCategories(next: UserCategoryState): void {
@@ -356,8 +355,13 @@ export function App(): ReactElement {
                 transactions={transactions}
                 categories={categories}
                 initialPeriod={activePeriod}
+                auth={auth}
                 budgets={budgetPlan}
+                budgetPreferences={budgetPreferences}
+                budgetSyncStatus={budgetSyncStatus}
                 onBudgetsChange={updateBudgetPlan}
+                onBudgetPreferencesChange={updateBudgetPreferences}
+                onDeleteServerBudgets={() => void deleteServerBudgets()}
               />
             )}
             {tab === 'unknown' && (

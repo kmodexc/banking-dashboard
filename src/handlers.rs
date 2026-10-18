@@ -12,8 +12,8 @@ use crate::{
     classifier,
     error::AppError,
     models::{
-        ClassificationRequest, ConfigResponse, GLOBAL_CATEGORIES, RuleCollection,
-        RuleCollectionResponse,
+        BudgetCollection, BudgetResponse, ClassificationRequest, ConfigResponse, GLOBAL_CATEGORIES,
+        RuleCollection, RuleCollectionResponse,
     },
 };
 
@@ -136,6 +136,38 @@ pub async fn delete_private(
         community: Vec::new(),
         categories: None,
     }))
+}
+
+pub async fn get_budgets(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> Result<Json<BudgetResponse>, AppError> {
+    Ok(Json(BudgetResponse {
+        budgets: state.store.private_budgets(&user.subject).await?,
+    }))
+}
+
+pub async fn replace_budgets(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(collection): Json<BudgetCollection>,
+) -> Result<Json<BudgetResponse>, AppError> {
+    collection.validate().map_err(AppError::BadRequest)?;
+    state
+        .store
+        .replace_private_budgets(&user.subject, &collection.budgets)
+        .await?;
+    Ok(Json(BudgetResponse {
+        budgets: Some(collection.budgets),
+    }))
+}
+
+pub async fn delete_budgets(
+    State(state): State<AppState>,
+    user: AuthUser,
+) -> Result<Json<BudgetResponse>, AppError> {
+    state.store.delete_private_budgets(&user.subject).await?;
+    Ok(Json(BudgetResponse { budgets: None }))
 }
 
 pub async fn add_community(

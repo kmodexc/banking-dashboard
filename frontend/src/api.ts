@@ -4,6 +4,8 @@ import {
   ClassificationResponseSchema,
 } from './types';
 import type { AppConfig, CategoryRule, ClassificationRule } from './types';
+import { parseBudgetPlanValue } from './data/budgets';
+import type { BudgetPlan } from './data/budgets';
 import { parseImportedCategoryState } from './data/categories';
 import type { UserCategoryState } from './data/categories';
 
@@ -110,6 +112,52 @@ export async function deleteStoredRules(config: AppConfig, token: string): Promi
     headers: { Authorization: `Bearer ${token}` },
   });
   await readRuleCollection(response);
+}
+
+export async function getStoredBudgets(
+  config: AppConfig,
+  token: string,
+): Promise<BudgetPlan | null> {
+  const response = await fetch(`${config.apiBaseUrl}/api/budgets`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (response.status === 401) throw new Error('Your session expired; sign in again');
+  if (!response.ok) throw new Error(`Request failed (${response.status})`);
+  const payload: unknown = await response.json();
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('Invalid budget response');
+  }
+  const value = payload as { budgets?: unknown };
+  if (value.budgets == null) return null;
+  const budgets = parseBudgetPlanValue(value.budgets);
+  if (!budgets) throw new Error('Invalid budget response');
+  return budgets;
+}
+
+export async function replaceStoredBudgets(
+  config: AppConfig,
+  token: string,
+  budgets: BudgetPlan,
+): Promise<void> {
+  const response = await fetch(`${config.apiBaseUrl}/api/budgets`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ budgets }),
+  });
+  if (response.status === 401) throw new Error('Your session expired; sign in again');
+  if (!response.ok) throw new Error(`Request failed (${response.status})`);
+}
+
+export async function deleteStoredBudgets(config: AppConfig, token: string): Promise<void> {
+  const response = await fetch(`${config.apiBaseUrl}/api/budgets`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (response.status === 401) throw new Error('Your session expired; sign in again');
+  if (!response.ok) throw new Error(`Request failed (${response.status})`);
 }
 
 export async function deleteContributedRules(config: AppConfig, token: string): Promise<void> {

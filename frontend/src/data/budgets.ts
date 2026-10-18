@@ -7,7 +7,7 @@ const BudgetMapSchema = z.record(
   z.number().finite().nonnegative().max(100_000_000),
 );
 
-const BudgetPlanSchema = z
+export const BudgetPlanSchema = z
   .object({
     defaults: BudgetMapSchema.default({}),
     monthly: z.record(z.string(), BudgetMapSchema).default({}),
@@ -49,11 +49,15 @@ function normalizePlan(value: z.infer<typeof BudgetPlanSchema>): BudgetPlan {
 export function parseBudgetPlan(value: string | null): BudgetPlan {
   if (!value) return EMPTY_BUDGET_PLAN;
   try {
-    const parsed = BudgetPlanSchema.safeParse(JSON.parse(value));
-    return parsed.success ? normalizePlan(parsed.data) : EMPTY_BUDGET_PLAN;
+    return parseBudgetPlanValue(JSON.parse(value)) ?? EMPTY_BUDGET_PLAN;
   } catch {
     return EMPTY_BUDGET_PLAN;
   }
+}
+
+export function parseBudgetPlanValue(value: unknown): BudgetPlan | null {
+  const parsed = BudgetPlanSchema.safeParse(value);
+  return parsed.success ? normalizePlan(parsed.data) : null;
 }
 
 export function loadBudgetPlan(): BudgetPlan {

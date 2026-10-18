@@ -106,6 +106,79 @@ async fn private_categories_round_trip_by_stable_id(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = "./db/rust-migrations")]
+async fn private_budgets_round_trip_and_stay_user_scoped(pool: PgPool) {
+    let (oidc, api, client) = server(pool).await;
+    let user_a = token(&oidc.issuer, "user-a");
+    let user_b = token(&oidc.issuer, "user-b");
+    let budgets = json!({
+        "budgets": {
+            "defaults": {"Food": 450.50},
+            "monthly": {"2026-02": {"Food": 500.0, "Travel": 900.0}}
+        }
+    });
+
+    let put = client
+        .put(format!("{}/api/budgets", api.base_url))
+        .header("host", "127.0.0.1")
+        .bearer_auth(&user_a)
+        .json(&budgets)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(put.status(), reqwest::StatusCode::OK);
+
+    let get = client
+        .get(format!("{}/api/budgets", api.base_url))
+        .header("host", "127.0.0.1")
+        .bearer_auth(&user_a)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(get.status(), reqwest::StatusCode::OK);
+    assert_eq!(get.json::<serde_json::Value>().await.unwrap(), budgets);
+
+    let other_user = client
+        .get(format!("{}/api/budgets", api.base_url))
+        .header("host", "127.0.0.1")
+        .bearer_auth(&user_b)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(other_user.status(), reqwest::StatusCode::OK);
+    assert_eq!(
+        other_user.json::<serde_json::Value>().await.unwrap(),
+        json!({"budgets": null})
+    );
+
+    let delete = client
+        .delete(format!("{}/api/budgets", api.base_url))
+        .header("host", "127.0.0.1")
+        .bearer_auth(&user_a)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(delete.status(), reqwest::StatusCode::OK);
+    assert_eq!(api.store.private_budgets("user-a").await.unwrap(), None);
+}
+
+#[sqlx::test(migrations = "./db/rust-migrations")]
+async fn invalid_private_budgets_are_rejected(pool: PgPool) {
+    let (oidc, api, client) = server(pool).await;
+    let bearer = token(&oidc.issuer, "user-a");
+    let invalid = client
+        .put(format!("{}/api/budgets", api.base_url))
+        .header("host", "127.0.0.1")
+        .bearer_auth(&bearer)
+        .json(&json!({
+            "budgets": {"defaults": {"Food": -1}, "monthly": {}}
+        }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(invalid.status(), reqwest::StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[sqlx::test(migrations = "./db/rust-migrations")]
 async fn private_rules_are_user_scoped_and_authentication_is_required(pool: PgPool) {
     let (oidc, api, client) = server(pool).await;
     let user_a = token(&oidc.issuer, "user-a");

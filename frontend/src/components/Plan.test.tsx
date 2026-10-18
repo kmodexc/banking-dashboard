@@ -2,6 +2,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { useState, type ReactElement } from 'react';
 import { describe, expect, it } from 'vitest';
 import type { BudgetPlan } from '../data/budgets';
+import type { BudgetPreferences } from '../data/preferences';
+import type { AuthSnapshot } from '../types';
 import type { Transaction } from '../types';
 import { Plan } from './Plan';
 
@@ -33,13 +35,20 @@ function PlanHarness(): ReactElement {
     defaults: { Food: 100, Rent: 500 },
     monthly: {},
   });
+  const signedOut: AuthSnapshot = { token: null, user: null, setupError: null };
+  const preferences: BudgetPreferences = { storePrivateBudgets: true };
   return (
     <Plan
       transactions={transactions}
       categories={['Food', 'Rent']}
       initialPeriod="2026-01"
+      auth={signedOut}
       budgets={budgets}
+      budgetPreferences={preferences}
+      budgetSyncStatus=""
       onBudgetsChange={setBudgets}
+      onBudgetPreferencesChange={() => undefined}
+      onDeleteServerBudgets={() => undefined}
     />
   );
 }
@@ -67,6 +76,18 @@ describe('plan tab', () => {
     );
     expect(screen.getByText('€80.00 planned')).toBeInTheDocument();
     expect(screen.getByText('€80.00 planned').parentElement).toHaveTextContent('month-specific');
+
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Food monthly budget' }), {
+      target: { value: '40' },
+    });
+    expect(screen.getByRole('progressbar', { name: 'Food spending progress' })).toHaveAttribute(
+      'aria-valuenow',
+      '125',
+    );
+    expect(screen.getByRole('progressbar', { name: 'Food spending progress' })).toHaveClass(
+      'over-budget',
+    );
+    expect(screen.getByText('€10.00 over budget')).toBeInTheDocument();
   });
 
   it('can move to a future month without imported transactions', () => {

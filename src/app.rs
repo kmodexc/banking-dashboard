@@ -55,6 +55,12 @@ pub fn router(state: AppState) -> Router {
                 .delete(handlers::delete_private),
         )
         .route(
+            "/api/budgets",
+            get(handlers::get_budgets)
+                .put(handlers::replace_budgets)
+                .delete(handlers::delete_budgets),
+        )
+        .route(
             "/api/community/rules",
             post(handlers::add_community).delete(handlers::delete_community),
         )
