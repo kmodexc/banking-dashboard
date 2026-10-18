@@ -1,8 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { OidcClient } from './auth';
 import { getAppConfig } from './config';
-import { readTransactions } from './data/csv';
-import { loadSessionTransactions, saveSessionTransactions } from './data/session';
 import { renameBudgetCategory } from './data/budgets';
 import {
   applyCategoryOverrides,
@@ -21,27 +19,18 @@ import {
   type CategoryEntry,
   type UserCategoryState,
 } from './data/categories';
-import { CategorizeUnknown } from './components/CategorizeUnknown';
-import { AllTransactions } from './components/AllTransactions';
-import { Account } from './components/Account';
 import { AppTabs } from './components/AppTabs';
+import { TabContent } from './components/TabContent';
 import type { AppTab } from './components/appTabs';
 import { AuthControls, FilePicker } from './components/AppChrome';
-import { Categories } from './components/Categories';
-import { Dashboard } from './components/Dashboard';
-import { Plan } from './components/Plan';
-import { RuleManager } from './components/RuleManager';
 import type { ManagedRule, RuleCategoryOption } from './components/RuleManager';
-import type { AuthSnapshot, CategoryRule, Transaction } from './types';
+import type { AuthSnapshot, CategoryRule } from './types';
 import { useRuleSync } from './hooks/useRuleSync';
 import { useBudgetSync } from './hooks/useBudgetSync';
+import { useTransactions } from './hooks/useTransactions';
 import './styles.css';
 
 const config = getAppConfig();
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Unexpected error';
-}
 
 function useAuth(client: OidcClient): AuthSnapshot {
   const [snapshot, setSnapshot] = useState<AuthSnapshot>(client.snapshot);
@@ -116,17 +105,17 @@ export function App(): ReactElement {
     updateBudgetPlan,
     updateBudgetPreferences,
   } = budgetSync;
-  const [rawTransactions, setRawTransactions] = useState<Transaction[]>(() =>
-    loadSessionTransactions(),
-  );
-  const [period, setPeriod] = useState('');
+  const {
+    transactions: rawTransactions,
+    period,
+    setPeriod,
+    loadError,
+    handleFile,
+    clearTransactions,
+  } = useTransactions();
   const [tab, setTab] = useState<AppTab>('dashboard');
-  const [loadError, setLoadError] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[] | null>(null);
   const ruleSyncError = ruleSyncStatus.startsWith('Could not ');
-  useEffect(() => {
-    saveSessionTransactions(rawTransactions);
-  }, [rawTransactions]);
   const rules = useMemo(
     () =>
       activeRules.map((rule) => ({
@@ -205,24 +194,9 @@ export function App(): ReactElement {
       ? period
       : (transactions[0]?.period ?? '');
 
-  async function handleFile(event: ChangeEvent<HTMLInputElement>): Promise<void> {
-    const file = event.currentTarget.files?.[0];
-    if (!file) return;
-    try {
-      const next = await readTransactions(file);
-      setRawTransactions(next);
-      setPeriod(next[0]?.period ?? '');
-      setLoadError('');
-    } catch (error: unknown) {
-      setLoadError(errorMessage(error));
-    }
-  }
-
   function clearLocalTransactions(): void {
-    setRawTransactions([]);
-    setPeriod('');
+    clearTransactions();
     setSelectedCategories(null);
-    setLoadError('');
   }
 
   function changeCategory(transactionId: string, category: string): void {
@@ -232,29 +206,6 @@ export function App(): ReactElement {
       return next;
     });
   }
-
-  const accountPanel = (
-    <Account
-      auth={auth}
-      transactionCount={rawTransactions.length}
-      budgets={budgetPlan}
-      budgetPreferences={budgetPreferences}
-      budgetSyncStatus={budgetSyncStatus}
-      serverHasBudgets={serverHasBudgets}
-      localRuleCount={localRules.length}
-      localCategoryCount={userCategoryState.categories.length}
-      rulePreferences={rulePreferences}
-      ruleSyncStatus={ruleSyncStatus}
-      serverRuleCount={serverRuleCount}
-      serverCategoryCount={serverCategoryCount}
-      onBudgetPreferencesChange={updateBudgetPreferences}
-      onRulePreferencesChange={updateRulePreferences}
-      onDeleteServerBudgets={() => void deleteServerBudgets()}
-      onDeleteServerRules={() => void removePrivateServerRules()}
-      onDeleteCommunityRules={() => void removeCommunityRules()}
-      onClearLocalTransactions={clearLocalTransactions}
-    />
-  );
 
   function updateUserCategories(next: UserCategoryState): void {
     const storageUserId = auth.token ? categoryUserId : null;
@@ -312,6 +263,52 @@ export function App(): ReactElement {
     userRules,
   ]);
 
+  const tabContentProps = {
+    tab,
+    transactions,
+    period: activePeriod,
+    onPeriodChange: setPeriod,
+    categories,
+    selectedCategories,
+    onCategoryFilterChange: setSelectedCategories,
+    onCategoryChange: changeCategory,
+    auth,
+    client,
+    rules,
+    userRules,
+    localRuleCount: localRules.length,
+    onAddRule: addRule,
+    onAddRules: addRules,
+    managedRules,
+    ruleCategoryOptions,
+    onImportRules: replaceLocalRules,
+    onUpdateRule: updateUserRule,
+    onDeleteRule: deleteUserRule,
+    onRemoveAllRules: () => replaceLocalRules([]),
+    userCategoryState,
+    categoryEntries: categoryEntriesForUser,
+    onAddCategory: addUserCategory,
+    onRenameCategory: renameUserCategory,
+    onDeleteCategory: deleteUserCategory,
+    onImportCategories: updateUserCategories,
+    onRulePreferencesChange: updateRulePreferences,
+    onSyncRules: () => void replaceRules(userRules, userCategoryState),
+    onDeleteServerRules: () => void removePrivateServerRules(),
+    rulePreferences,
+    ruleSyncStatus,
+    budgets: budgetPlan,
+    budgetPreferences,
+    budgetSyncStatus,
+    serverHasBudgets,
+    onBudgetsChange: updateBudgetPlan,
+    onBudgetPreferencesChange: updateBudgetPreferences,
+    onDeleteServerBudgets: () => void deleteServerBudgets(),
+    serverRuleCount,
+    serverCategoryCount,
+    onDeleteCommunityRules: () => void removeCommunityRules(),
+    onClearTransactions: clearLocalTransactions,
+  };
+
   return (
     <>
       <header className="topbar">
@@ -350,7 +347,7 @@ export function App(): ReactElement {
           <>
             <AppTabs activeTab={tab} onChange={setTab} />
             {tab === 'account' ? (
-              accountPanel
+              <TabContent {...tabContentProps} />
             ) : (
               <section id="welcome-panel" className="panel empty-state">
                 <h2>Load a supported bank export to begin</h2>
@@ -382,82 +379,7 @@ export function App(): ReactElement {
               </span>
             </div>
             <AppTabs activeTab={tab} onChange={setTab} />
-            {tab === 'dashboard' && (
-              <Dashboard
-                transactions={transactions}
-                period={activePeriod}
-                onPeriodChange={setPeriod}
-                categories={categories}
-                selectedCategories={selectedCategories}
-                onCategoryFilterChange={setSelectedCategories}
-                onCategoryChange={changeCategory}
-              />
-            )}
-            {tab === 'plan' && (
-              <Plan
-                transactions={transactions}
-                categories={categories}
-                initialPeriod={activePeriod}
-                auth={auth}
-                budgets={budgetPlan}
-                budgetPreferences={budgetPreferences}
-                budgetSyncStatus={budgetSyncStatus}
-                onBudgetsChange={updateBudgetPlan}
-                onBudgetPreferencesChange={updateBudgetPreferences}
-                onDeleteServerBudgets={() => void deleteServerBudgets()}
-              />
-            )}
-            {tab === 'unknown' && (
-              <CategorizeUnknown
-                transactions={transactions}
-                rules={rules}
-                auth={auth}
-                client={client}
-                onAddRule={addRule}
-                onAddRules={addRules}
-                categories={categories}
-                userRules={userRules.map((rule) => ({
-                  ...rule,
-                  category: categoryName(userCategoryState, rule.category),
-                }))}
-              />
-            )}
-            {tab === 'categories' && (
-              <>
-                <Categories
-                  auth={auth}
-                  entries={categoryEntriesForUser}
-                  state={userCategoryState}
-                  onAdd={addUserCategory}
-                  onRename={renameUserCategory}
-                  onDelete={deleteUserCategory}
-                  onImport={updateUserCategories}
-                  rulePreferences={rulePreferences}
-                  onRulePreferencesChange={updateRulePreferences}
-                  onSyncRules={() => void replaceRules(userRules, userCategoryState)}
-                  onDeleteServerRules={() => void removePrivateServerRules()}
-                  ruleSyncStatus={ruleSyncStatus}
-                >
-                  <RuleManager
-                    rules={managedRules}
-                    categories={ruleCategoryOptions}
-                    rulesToExport={userRules}
-                    onImport={replaceLocalRules}
-                    onUpdate={updateUserRule}
-                    onDelete={deleteUserRule}
-                    onRemoveAll={() => replaceLocalRules([])}
-                  />
-                </Categories>
-              </>
-            )}
-            {tab === 'all' && (
-              <AllTransactions
-                transactions={transactions}
-                categories={categories}
-                onCategoryChange={changeCategory}
-              />
-            )}
-            {tab === 'account' && accountPanel}
+            <TabContent {...tabContentProps} />
           </section>
         )}
       </main>
