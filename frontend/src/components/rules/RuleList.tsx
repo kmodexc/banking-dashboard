@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
 import { parseImportedRules, ruleKey, serializeRules } from '../../data/rules';
 import { CategoryRuleSchema } from '../../types';
-import type { CategoryRule, ManagedRule } from '../../types';
+import type { CategoryRule, ManagedRule, Transaction } from '../../types';
 import { RuleDeleteDialog } from './RuleDeleteDialog';
 import { RuleForm } from './RuleForm';
 import type { RulesController } from './ruleTypes';
@@ -32,7 +32,13 @@ function addedAtLabel(rule: CategoryRule): string {
   }).format(new Date(rule.createdAt));
 }
 
-export function RuleList({ rulesController }: { rulesController: RulesController }): ReactElement {
+export function RuleList({
+  rulesController,
+  transactions = [],
+}: {
+  rulesController: RulesController;
+  transactions?: Transaction[];
+}): ReactElement {
   const { rules, categories, editableRules, actions } = rulesController;
   const fileInput = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState('');
@@ -264,6 +270,7 @@ export function RuleList({ rulesController }: { rulesController: RulesController
         <RuleForm
           rule={getRule(selectedEntry)}
           categories={categories}
+          transactions={transactions}
           onSave={(next) => saveRule(getRule(selectedEntry), next)}
           onClose={() => setSelectedEntry(null)}
         />

@@ -21,6 +21,7 @@ interface DashboardView {
   selectedCategories: string[] | null;
   onCategoryFilterChange: (categories: string[] | null) => void;
   onCategoryChange: (transactionId: string, category: string) => void;
+  rulesController?: RulesController;
 }
 
 interface PlanView {
@@ -45,12 +46,14 @@ interface UnknownView {
 interface CategoriesView {
   categoriesController: CategoriesController;
   rulesController: RulesController;
+  transactions: Transaction[];
 }
 
 interface AllTransactionsView {
   transactions: Transaction[];
   categories: string[];
   onCategoryChange: (transactionId: string, category: string) => void;
+  rulesController?: RulesController;
 }
 
 export interface TabContentProps {
@@ -84,6 +87,7 @@ export function TabContent({
         <Categories
           categoriesController={categories.categoriesController}
           rulesController={categories.rulesController}
+          transactions={categories.transactions}
         />
       );
     case 'all':

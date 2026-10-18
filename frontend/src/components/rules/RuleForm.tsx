@@ -1,6 +1,8 @@
 import { useState, type FormEvent, type ReactElement } from 'react';
+import { matchesRule } from '../../data/rules';
 import { CategoryRuleSchema, RuleColumnSchema } from '../../types';
-import type { CategoryRule, RuleCategoryOption } from '../../types';
+import type { CategoryRule, RuleCategoryOption, Transaction } from '../../types';
+import { formatDate, money } from '../../utils/format';
 
 function addedAtLabel(createdAt: string | undefined): string {
   if (!createdAt) return 'Date not recorded';
@@ -16,6 +18,7 @@ export function RuleForm({
   rule,
   initialValues,
   categories,
+  transactions,
   onAdd,
   onSave,
   onClose,
@@ -23,6 +26,7 @@ export function RuleForm({
   rule?: CategoryRule;
   initialValues?: Partial<Pick<CategoryRule, 'keyword' | 'category' | 'column'>>;
   categories: RuleCategoryOption[];
+  transactions?: Transaction[];
   onAdd?: (rule: CategoryRule) => void;
   onSave?: (rule: CategoryRule) => string | null;
   onClose?: () => void;
@@ -37,6 +41,12 @@ export function RuleForm({
     },
   );
   const [error, setError] = useState('');
+  const matchingTransactions =
+    isExistingRule && transactions
+      ? transactions.filter(
+          (transaction) => transaction.type === 'Ausgang' && matchesRule(transaction, draft),
+        )
+      : [];
 
   function updateDraft(next: Partial<CategoryRule>): void {
     setDraft((current) => ({ ...current, ...next }));
@@ -134,6 +144,41 @@ export function RuleForm({
           ))}
         </div>
       </div>
+      {isExistingRule && transactions && (
+        <section className="rule-match-summary" aria-labelledby="rule-matches-heading">
+          <div className="rule-match-heading">
+            <div>
+              <p className="eyebrow accent-eyebrow">Current matches</p>
+              <h3 id="rule-matches-heading">
+                {matchingTransactions.length} transaction
+                {matchingTransactions.length === 1 ? '' : 's'}
+              </h3>
+            </div>
+            <span className="rule-list-chip">Searches {draft.column}</span>
+          </div>
+          <details className="rule-match-details">
+            <summary>Show matching transactions</summary>
+            {matchingTransactions.length ? (
+              <ul className="rule-match-list">
+                {matchingTransactions.map((transaction) => (
+                  <li key={transaction.id}>
+                    <div>
+                      <strong>{transaction.recipient || 'Unnamed transaction'}</strong>
+                      {transaction.purpose && <span>{transaction.purpose}</span>}
+                    </div>
+                    <div className="rule-match-meta">
+                      <time dateTime={transaction.date}>{formatDate(transaction.date)}</time>
+                      <span>{money(transaction.amount)}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted small">No outgoing transactions match this rule.</p>
+            )}
+          </details>
+        </section>
+      )}
       {error && <p className="notice category-auth-notice">{error}</p>}
       <div className="category-row-actions rule-form-actions">
         <button className="button primary" type="submit">

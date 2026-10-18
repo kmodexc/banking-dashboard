@@ -111,6 +111,7 @@ export function App(): ReactElement {
       selectedCategories,
       onCategoryFilterChange: setSelectedCategories,
       onCategoryChange: changeCategory,
+      rulesController,
     },
     plan: {
       transactions,
@@ -132,11 +133,13 @@ export function App(): ReactElement {
     categories: {
       categoriesController,
       rulesController,
+      transactions,
     },
     allTransactions: {
       transactions,
       categories,
       onCategoryChange: changeCategory,
+      rulesController,
     },
     account: {
       auth,

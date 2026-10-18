@@ -1,5 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import type { Transaction } from '../../types';
+import type { RulesController } from '../rules/ruleTypes';
 import { TransactionDetailsModal } from './TransactionDetailsModal';
 import { TransactionFilters, type TransactionTypeFilter } from './TransactionFilters';
 import { TransactionTable } from './TransactionTable';
@@ -8,10 +9,12 @@ export function AllTransactions({
   transactions,
   categories,
   onCategoryChange,
+  rulesController,
 }: {
   transactions: Transaction[];
   categories: string[];
   onCategoryChange: (transactionId: string, category: string) => void;
+  rulesController?: RulesController;
 }): ReactElement {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<TransactionTypeFilter>('all');
@@ -52,6 +55,8 @@ export function AllTransactions({
         <TransactionDetailsModal
           transaction={selectedTransaction}
           categories={categories}
+          transactions={transactions}
+          rulesController={rulesController}
           onClose={() => setSelectedId(null)}
           onCategoryChange={onCategoryChange}
         />

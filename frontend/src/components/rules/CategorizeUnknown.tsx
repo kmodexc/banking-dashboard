@@ -72,7 +72,7 @@ export function CategorizeUnknown({
           />
         </article>
       </div>
-      <RuleList rulesController={rulesController} />
+      <RuleList rulesController={rulesController} transactions={transactions} />
     </section>
   );
 }

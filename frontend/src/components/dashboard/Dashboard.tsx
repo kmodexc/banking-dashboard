@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import type { Transaction } from '../../types';
+import type { RulesController } from '../rules/ruleTypes';
 import { DashboardHeader } from './DashboardHeader';
 import { ExpenseCategoryPanel } from './ExpenseCategoryPanel';
 import { MetricGrid } from './MetricGrid';
@@ -17,6 +18,7 @@ export function Dashboard({
   selectedCategories,
   onCategoryFilterChange,
   onCategoryChange,
+  rulesController,
 }: {
   transactions: Transaction[];
   period: string;
@@ -25,6 +27,7 @@ export function Dashboard({
   selectedCategories: string[] | null;
   onCategoryFilterChange: (categories: string[] | null) => void;
   onCategoryChange: (transactionId: string, category: string) => void;
+  rulesController?: RulesController;
 }): ReactElement {
   const {
     periods,
@@ -82,6 +85,8 @@ export function Dashboard({
         <TransactionDetailsModal
           transaction={selectedTransaction}
           categories={categories}
+          transactions={transactions}
+          rulesController={rulesController}
           onClose={() => setSelectedId(null)}
           onCategoryChange={onCategoryChange}
         />
