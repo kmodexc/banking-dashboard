@@ -1,5 +1,7 @@
 export const MAX_VISUAL_PERCENTAGE = 150;
 
+export type PlanView = 'list' | 'chart' | 'boxplot';
+
 export interface PlanBudgetHistory {
   months: number;
   min: number;

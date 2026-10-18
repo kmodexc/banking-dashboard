@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
-import { CategoryRuleSchema, RuleColumnSchema } from '../types';
+import { CategoryRuleSchema } from '../types';
 import type { CategoryRule, ManagedRule, RuleCategoryOption } from '../types';
 import { parseImportedRules, ruleKey, serializeRules } from '../data/rules';
+import { RuleDeleteDialog } from './rules/RuleDeleteDialog';
+import { RuleList } from './rules/RuleList';
 
 export type { ManagedRule, RuleCategoryOption } from '../types';
 
@@ -172,153 +174,26 @@ export function RuleManager({
         />
       </label>
       {message && <p className="notice category-auth-notice">{message}</p>}
-      <ol className="rule-list" aria-label="Categorization rule list">
-        {visibleRules.map((entry) => {
-          const key = ruleKey(entry.rule);
-          const isEditing = editingKey === key && draft;
-          return (
-            <li className="rule-row" key={`${entry.source}:${key}`}>
-              {isEditing ? (
-                <RuleEditor
-                  draft={draft}
-                  categories={categories}
-                  onChange={setDraft}
-                  onSave={() => saveEditing(entry.rule)}
-                  onCancel={cancelEditing}
-                />
-              ) : (
-                <>
-                  <div className="rule-row-content">
-                    <strong>{entry.rule.keyword}</strong>
-                    <span className="rule-row-category">{entry.categoryLabel}</span>
-                    <span className="rule-row-column">Searches {entry.rule.column}</span>
-                  </div>
-                  <div className="category-row-actions">
-                    <button
-                      className="button secondary"
-                      type="button"
-                      onClick={() => startEditing(entry)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="button secondary danger-button"
-                      type="button"
-                      onClick={() => deleteRule(entry.rule)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </>
-              )}
-            </li>
-          );
-        })}
-      </ol>
+      <RuleList
+        rules={visibleRules}
+        categories={categories}
+        editingKey={editingKey}
+        draft={draft}
+        onStartEditing={startEditing}
+        onDraftChange={setDraft}
+        onSave={saveEditing}
+        onCancel={cancelEditing}
+        onDelete={deleteRule}
+      />
       {!visibleRules.length && <p className="muted">No rules match this filter.</p>}
       {deleteAllOpen && (
-        <div className="modal-backdrop">
-          <section
-            className="details-modal rule-confirmation"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="remove-all-rules-title"
-          >
-            <h2 id="remove-all-rules-title">Remove all rules?</h2>
-            <p>
-              This removes all personal rules from this browser and, when enabled, from the private
-              server copy.
-            </p>
-            <label htmlFor="remove-all-rules-confirmation">
-              Type <code>delete</code> to confirm
-              <input
-                id="remove-all-rules-confirmation"
-                value={deleteConfirmation}
-                onChange={(event) => setDeleteConfirmation(event.currentTarget.value)}
-                autoFocus
-              />
-            </label>
-            <div className="category-actions">
-              <button className="button secondary" type="button" onClick={cancelDeleteAll}>
-                Cancel
-              </button>
-              <button
-                className="button remove-all-rules-button"
-                type="button"
-                disabled={deleteConfirmation !== 'delete'}
-                onClick={removeAllRules}
-              >
-                OK
-              </button>
-            </div>
-          </section>
-        </div>
+        <RuleDeleteDialog
+          confirmation={deleteConfirmation}
+          onConfirmationChange={setDeleteConfirmation}
+          onCancel={cancelDeleteAll}
+          onConfirm={removeAllRules}
+        />
       )}
     </article>
-  );
-}
-
-function RuleEditor({
-  draft,
-  categories,
-  onChange,
-  onSave,
-  onCancel,
-}: {
-  draft: CategoryRule;
-  categories: RuleCategoryOption[];
-  onChange: (rule: CategoryRule) => void;
-  onSave: () => void;
-  onCancel: () => void;
-}): ReactElement {
-  function changeColumn(value: string): void {
-    onChange({ ...draft, column: RuleColumnSchema.parse(value) });
-  }
-
-  return (
-    <div className="rule-editor">
-      <label>
-        Keyword
-        <input
-          aria-label="Edit rule keyword"
-          maxLength={200}
-          value={draft.keyword}
-          onChange={(event) => onChange({ ...draft, keyword: event.currentTarget.value })}
-        />
-      </label>
-      <label>
-        Search in
-        <select value={draft.column} onChange={(event) => changeColumn(event.currentTarget.value)}>
-          <option value="recipient">Recipient</option>
-          <option value="purpose">Purpose</option>
-          <option value="both">Both</option>
-        </select>
-      </label>
-      <div className="rule-category-editor category-editor">
-        <span className="category-editor-label">Category</span>
-        <div className="category-buttons" role="radiogroup" aria-label="Edit rule category">
-          {categories.map((category) => (
-            <label className="category-choice" key={category.value}>
-              <input
-                type="radio"
-                name="edit-rule-category"
-                value={category.value}
-                checked={draft.category === category.value}
-                onChange={() => onChange({ ...draft, category: category.value })}
-              />
-              <span>{category.label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-      <div className="category-row-actions">
-        <button className="button primary" type="button" onClick={onSave}>
-          Save rule
-        </button>
-        <button className="button secondary" type="button" onClick={onCancel}>
-          Cancel
-        </button>
-      </div>
-    </div>
   );
 }
