@@ -1,13 +1,13 @@
 import type { ReactElement } from 'react';
 import type { BudgetPlan } from '../data/budgets';
 import { clearMonthlyBudget, updateBudgetValue } from '../data/budgets';
-import { formatPeriod, money } from '../utils/format';
+import { formatPeriod } from '../utils/format';
+import { BudgetCategoryGrid } from './budgets/BudgetCategoryGrid';
+import { BudgetScopeSwitch } from './budgets/BudgetScopeSwitch';
+import { BudgetTotal } from './budgets/BudgetTotal';
+import type { BudgetMode } from './budgetTypes';
 
-export type BudgetMode = 'default' | 'monthly';
-
-function hasValue(map: Record<string, number>, category: string): boolean {
-  return Object.prototype.hasOwnProperty.call(map, category);
-}
+export type { BudgetMode } from './budgetTypes';
 
 export function BudgetEditor({
   budgets,
@@ -61,88 +61,24 @@ export function BudgetEditor({
               : 'Leave a field empty to use the default budget for this category.'}
           </p>
         </div>
-        <div className="budget-editor-controls">
-          <div className="budget-scope-switch" role="tablist" aria-label="Budget mode">
-            <button
-              className={`budget-scope-button${mode === 'default' ? ' active' : ''}`}
-              type="button"
-              role="tab"
-              aria-selected={mode === 'default'}
-              onClick={() => onModeChange('default')}
-            >
-              <strong>Default budgets</strong>
-              <small>Every month</small>
-            </button>
-            <button
-              className={`budget-scope-button${mode === 'monthly' ? ' active' : ''}`}
-              type="button"
-              role="tab"
-              aria-selected={mode === 'monthly'}
-              onClick={() => onModeChange('monthly')}
-            >
-              <strong>This month</strong>
-              <small>{formatPeriod(period)}</small>
-            </button>
-          </div>
-          {mode === 'monthly' && (
-            <button
-              className="button secondary danger-button budget-reset-button"
-              type="button"
-              disabled={!Object.keys(monthlyBudgets).length}
-              onClick={() => onBudgetsChange(clearMonthlyBudget(budgets, period))}
-            >
-              <span aria-hidden="true">↺</span> Reset month-specific budgets
-            </button>
-          )}
-        </div>
+        <BudgetScopeSwitch
+          mode={mode}
+          period={period}
+          hasMonthlyBudgets={Boolean(Object.keys(monthlyBudgets).length)}
+          onModeChange={onModeChange}
+          onResetMonthly={() => onBudgetsChange(clearMonthlyBudget(budgets, period))}
+        />
       </div>
-      <div className="budget-editor-grid">
-        {categories.map((category) => {
-          const hasMonthlyBudget = hasValue(monthlyBudgets, category);
-          const defaultBudget = budgets.defaults[category] ?? 0;
-          return (
-            <label className="budget-editor-row" key={category}>
-              <span>{category}</span>
-              <span className="budget-input-wrap">
-                <span className="currency-prefix">€</span>
-                <input
-                  aria-label={`${category} ${mode === 'default' ? 'default' : 'monthly'} budget`}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder={
-                    mode === 'monthly' && !hasMonthlyBudget ? String(defaultBudget) : '0.00'
-                  }
-                  value={editorBudgets[category] ?? ''}
-                  onChange={(event) => changeBudget(category, event.currentTarget.value)}
-                />
-                <span className="budget-suffix">/ month</span>
-              </span>
-              {mode === 'monthly' && !hasMonthlyBudget && (
-                <small className="budget-fallback">Using default: {money(defaultBudget)}</small>
-              )}
-            </label>
-          );
-        })}
-      </div>
+      <BudgetCategoryGrid
+        categories={categories}
+        mode={mode}
+        monthlyBudgets={monthlyBudgets}
+        defaultBudgets={budgets.defaults}
+        editorBudgets={editorBudgets}
+        onChange={changeBudget}
+      />
       {!categories.length && <p className="muted empty-copy">No categories available yet.</p>}
-      <div className="budget-editor-total">
-        <div>
-          <span className="budget-editor-total-label">
-            {mode === 'default'
-              ? 'Total default budget'
-              : `Total planned for ${formatPeriod(period)}`}
-          </span>
-          <small>
-            {mode === 'default'
-              ? 'Applied when no monthly override exists'
-              : 'Effective total including defaults'}
-          </small>
-        </div>
-        <strong>
-          {money(budgetEditorTotal)} <span>/ month</span>
-        </strong>
-      </div>
+      <BudgetTotal mode={mode} period={period} total={budgetEditorTotal} />
     </article>
   );
 }
