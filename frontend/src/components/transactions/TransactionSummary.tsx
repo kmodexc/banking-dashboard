@@ -33,6 +33,10 @@ export function TransactionSummary({ transaction }: { transaction: Transaction }
       </div>
       <dl className={styles.details}>
         <div>
+          <dt>Category</dt>
+          <dd>{transaction.category || 'Uncategorized'}</dd>
+        </div>
+        <div>
           <dt>Period</dt>
           <dd>{formatPeriod(transaction.period)}</dd>
         </div>
