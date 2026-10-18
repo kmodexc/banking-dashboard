@@ -1,0 +1,40 @@
+.transaction-summary {
+  display: grid;
+  gap: 0.65rem;
+}
+.transaction-summary-main {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+.transaction-summary-main strong,
+.transaction-summary-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.transaction-summary-main span {
+  color: var(--muted);
+}
+.transaction-summary-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.7rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.transaction-summary-amount {
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.details-modal .transaction-summary {
+  margin: 1.4rem 0;
+  padding: 1rem;
+  border-radius: 10px;
+  background: var(--wash);
+}
+.details-modal .transaction-summary-amount {
+  font-size: 1.55rem;
+  font-weight: 800;
+}

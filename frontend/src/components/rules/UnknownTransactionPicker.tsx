@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import type { Transaction } from '../../types';
 import { money } from '../../utils/format';
 import { SearchPreview } from '../shared/SearchPreview';
+import { TransactionSummary } from '../transactions/TransactionSummary';
 
 export function UnknownTransactionPicker({
   transactions,
@@ -67,15 +68,7 @@ export function UnknownTransactionPicker({
       </div>
       <div id="unknown-details" className="details">
         {selected ? (
-          <>
-            <strong>{selected.recipient}</strong>
-            <br />
-            {selected.purpose}
-            <br />
-            <span className="muted">
-              {selected.date} · {money(selected.amount)}
-            </span>
-          </>
+          <TransactionSummary transaction={selected} />
         ) : (
           <span className="muted">No unknown outgoing transactions.</span>
         )}

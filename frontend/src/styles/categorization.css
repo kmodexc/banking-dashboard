@@ -22,8 +22,11 @@
 .modal-header {
   display: flex;
   align-items: flex-start;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 1rem;
+}
+.rule-form-modal .modal-header {
+  justify-content: flex-end;
 }
 .modal-header h2 {
   max-width: 330px;
@@ -46,21 +49,6 @@
 .close-button:focus-visible {
   color: var(--ink);
   background: var(--wash);
-}
-.detail-amount {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  margin: 1.4rem 0;
-  padding: 1rem;
-  border-radius: 10px;
-  background: var(--wash);
-}
-.detail-amount > span:first-child {
-  font-size: 1.55rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
 }
 .expense-text {
   color: #b54732;

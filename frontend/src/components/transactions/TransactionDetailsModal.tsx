@@ -1,10 +1,11 @@
 import { useState, type ReactElement } from 'react';
 import { matchesRule, ruleKey } from '../../data/rules';
 import type { CategoryRule, Transaction } from '../../types';
-import { formatDate, formatPeriod, money } from '../../utils/format';
+import { formatPeriod } from '../../utils/format';
 import { RuleForm } from '../rules/RuleForm';
 import type { RulesController } from '../rules/ruleTypes';
 import { SearchPreview } from '../shared/SearchPreview';
+import { TransactionSummary } from './TransactionSummary';
 
 export function TransactionDetailsModal({
   transaction,
@@ -77,28 +78,11 @@ export function TransactionDetailsModal({
         </div>
         <div className="detail-grid">
           <div className="detail-column">
-            <div className="detail-amount">
-              <span className={transaction.amount < 0 ? 'expense-text' : 'income-text'}>
-                {money(transaction.amount)}
-              </span>
-              <span className="muted">{transaction.type === 'Eingang' ? 'Income' : 'Expense'}</span>
-            </div>
+            <TransactionSummary transaction={transaction} />
             <dl className="detail-list">
-              <div>
-                <dt>Date</dt>
-                <dd>{formatDate(transaction.date)}</dd>
-              </div>
               <div>
                 <dt>Period</dt>
                 <dd>{formatPeriod(transaction.period)}</dd>
-              </div>
-              <div>
-                <dt>Recipient</dt>
-                <dd>{transaction.recipient || '—'}</dd>
-              </div>
-              <div>
-                <dt>Purpose</dt>
-                <dd>{transaction.purpose || '—'}</dd>
               </div>
               <div>
                 <dt>Transaction ID</dt>
