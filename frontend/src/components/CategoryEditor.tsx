@@ -5,6 +5,8 @@ import {
   type CategoryEntry,
   type UserCategoryState,
 } from '../data/categories';
+import { CategoryActions } from './categories/CategoryActions';
+import { CategoryList } from './categories/CategoryList';
 
 export function CategoryEditor({
   entries,
@@ -102,21 +104,11 @@ export function CategoryEditor({
             until you choose private online storage.
           </p>
         </div>
-        <div className="category-actions">
-          <button className="button secondary" type="button" onClick={exportCategories}>
-            Export categories
-          </button>
-          <label className="button secondary">
-            Import categories
-            <input
-              ref={fileInput}
-              className="file-picker-input"
-              type="file"
-              accept="application/json,.json"
-              onChange={(event) => void importCategories(event)}
-            />
-          </label>
-        </div>
+        <CategoryActions
+          fileInput={fileInput}
+          onExport={exportCategories}
+          onImport={(event) => void importCategories(event)}
+        />
       </div>
       <div className="category-add-row">
         <input
@@ -130,40 +122,15 @@ export function CategoryEditor({
           Add category
         </button>
       </div>
-      <div className="category-list" aria-label="Category list">
-        {entries.map((entry) => (
-          <div className="category-row" key={entry.key}>
-            <div>
-              <span className="category-source">Personal</span>
-              <input
-                aria-label={`${entry.name} category name`}
-                maxLength={80}
-                value={drafts[entry.key] ?? entry.name}
-                onChange={(event) => {
-                  const { value } = event.currentTarget;
-                  setDrafts((current) => ({ ...current, [entry.key]: value }));
-                }}
-              />
-            </div>
-            <div className="category-row-actions">
-              <button
-                className="button secondary"
-                type="button"
-                onClick={() => renameCategory(entry)}
-              >
-                Rename
-              </button>
-              <button
-                className="button secondary danger-button"
-                type="button"
-                onClick={() => deleteCategory(entry)}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <CategoryList
+        entries={entries}
+        drafts={drafts}
+        onDraftChange={(entry, value) =>
+          setDrafts((current) => ({ ...current, [entry.key]: value }))
+        }
+        onRename={renameCategory}
+        onDelete={deleteCategory}
+      />
       {message && <p className="muted small">{message}</p>}
     </article>
   );
