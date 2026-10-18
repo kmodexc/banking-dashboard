@@ -52,7 +52,7 @@ describe('transaction details rule matching', () => {
       />,
     );
 
-    expect(screen.getByText('January 2026')).toBeInTheDocument();
+    expect(screen.queryByText('January 2026')).not.toBeInTheDocument();
     expect(screen.getByText('expense-1')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /SPC\.CAFE/ }));
 

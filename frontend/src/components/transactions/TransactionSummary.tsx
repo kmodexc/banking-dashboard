@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { Transaction } from '../../types';
-import { formatDate, formatPeriod, money } from '../../utils/format';
+import { formatDate, money } from '../../utils/format';
 import styles from './TransactionSummary.module.css';
 
 function formatCurrencyAmount(value: number, currency?: string): string {
@@ -68,10 +68,6 @@ export function TransactionSummary({ transaction }: { transaction: Transaction }
         )}
       </div>
       <dl className={styles.details}>
-        <div>
-          <dt>Period</dt>
-          <dd>{formatPeriod(transaction.period)}</dd>
-        </div>
         <div>
           <dt>Transaction ID</dt>
           <dd>{transaction.id}</dd>
