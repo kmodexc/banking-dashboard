@@ -82,7 +82,7 @@ describe('rule summary list', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /OLD SHOP/ }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Rule' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Edit rule' })).toBeInTheDocument();
     expect(
       within(screen.getByRole('dialog')).getByText('Jan 1, 2026, 12:00 PM'),
     ).toBeInTheDocument();

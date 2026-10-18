@@ -139,9 +139,34 @@ export function RuleList({ rulesController }: { rulesController: RulesController
           <h2 id="rules-heading">Categorization rules</h2>
           <p className="muted small">Search, sort, and select a rule to edit its details.</p>
         </div>
-        <div className="rule-list-total" aria-label={`${rules.length} total rules`}>
-          <strong>{rules.length}</strong>
-          <span>total rules</span>
+        <div className="rule-list-header-right">
+          <div className="rule-list-total" aria-label={`${rules.length} total rules`}>
+            <strong>{rules.length}</strong>
+            <span>total rules</span>
+          </div>
+          <div className="category-actions rule-list-header-actions">
+            <button className="button secondary" type="button" onClick={exportRules}>
+              Export rules
+            </button>
+            <label className="button secondary">
+              Import rules
+              <input
+                ref={fileInput}
+                className="file-picker-input"
+                type="file"
+                accept="application/json,.json"
+                onChange={(event) => void importRules(event)}
+              />
+            </label>
+            <button
+              className="button remove-all-rules-button"
+              type="button"
+              disabled={!editableRules.length}
+              onClick={openDeleteAllConfirmation}
+            >
+              Remove all rules
+            </button>
+          </div>
         </div>
       </div>
       <div className="rule-list-toolbar">
@@ -168,40 +193,15 @@ export function RuleList({ rulesController }: { rulesController: RulesController
           </select>
         </label>
       </div>
-      <div className="rule-list-actions">
-        <div className="category-actions">
-          <button className="button secondary" type="button" onClick={exportRules}>
-            Export rules
-          </button>
-          <label className="button secondary">
-            Import rules
-            <input
-              ref={fileInput}
-              className="file-picker-input"
-              type="file"
-              accept="application/json,.json"
-              onChange={(event) => void importRules(event)}
-            />
-          </label>
-          <button
-            className="button remove-all-rules-button"
-            type="button"
-            disabled={!editableRules.length}
-            onClick={openDeleteAllConfirmation}
-          >
-            Remove all rules
-          </button>
-        </div>
-        <div className="rule-list-status">
-          <span className="rule-list-results">
-            {visibleRules.length} of {rules.length} shown
-          </span>
-          <span className="muted small">
-            Import replaces editable rules; shared rules stay unchanged.
-          </span>
-        </div>
-        {message && <p className="notice category-auth-notice">{message}</p>}
+      <div className="rule-list-status">
+        <span className="rule-list-results">
+          {visibleRules.length} of {rules.length} shown
+        </span>
+        <span className="muted small">
+          Import replaces editable rules; shared rules stay unchanged.
+        </span>
       </div>
+      {message && <p className="notice category-auth-notice rule-list-message">{message}</p>}
       {sortedRules.length ? (
         <ul className="recent-rule-list rule-list" aria-label="Categorization rule list">
           {sortedRules.map((entry) => {

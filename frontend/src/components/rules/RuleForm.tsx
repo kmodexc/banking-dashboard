@@ -80,7 +80,10 @@ export function RuleForm({
   const form = (
     <form className="rule-form" onSubmit={submit}>
       <div className="rule-form-heading">
-        <h2>Rule</h2>
+        <div>
+          <p className="eyebrow accent-eyebrow">Rule details</p>
+          <h2>{isExistingRule ? 'Edit rule' : 'Add rule'}</h2>
+        </div>
         {isExistingRule && (
           <p className="rule-form-created">
             <span>Added</span>
@@ -145,43 +148,47 @@ export function RuleForm({
           <button className="button primary" type="submit">
             Save rule
           </button>
-          {isExistingRule && onDelete && (
-            <button
-              className="button secondary danger-button"
-              type="button"
-              onClick={() => setConfirmingDelete(true)}
-            >
-              Delete rule
-            </button>
-          )}
-          {onClose && (
-            <button className="button secondary" type="button" onClick={onClose}>
-              Cancel
-            </button>
-          )}
         </div>
       )}
-      {confirmingDelete && (
-        <div className="rule-delete-confirmation">
-          <p>
-            Delete <strong>{draft.keyword}</strong>? This cannot be undone.
-          </p>
-          <div className="category-row-actions rule-form-actions">
-            <button
-              className="button secondary"
-              type="button"
-              onClick={() => setConfirmingDelete(false)}
-            >
-              Keep rule
-            </button>
-            <button
-              className="button secondary danger-button"
-              type="button"
-              onClick={confirmDelete}
-            >
-              Confirm delete
-            </button>
-          </div>
+      {isExistingRule && onDelete && (
+        <div className="rule-danger-zone">
+          {!confirmingDelete ? (
+            <>
+              <div className="rule-danger-copy">
+                <strong>Danger zone</strong>
+                <span>Deleting this rule cannot be undone.</span>
+              </div>
+              <button
+                className="button secondary danger-button"
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+              >
+                Delete rule
+              </button>
+            </>
+          ) : (
+            <div className="rule-delete-confirmation">
+              <p>
+                Delete <strong>{draft.keyword}</strong>? This cannot be undone.
+              </p>
+              <div className="category-row-actions rule-form-actions">
+                <button
+                  className="button secondary"
+                  type="button"
+                  onClick={() => setConfirmingDelete(false)}
+                >
+                  Keep rule
+                </button>
+                <button
+                  className="button secondary danger-button"
+                  type="button"
+                  onClick={confirmDelete}
+                >
+                  Confirm delete
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </form>
@@ -199,7 +206,7 @@ export function RuleForm({
       >
         <div className="modal-header">
           <button
-            className="button secondary close-button"
+            className="button close-button"
             type="button"
             aria-label="Close rule details"
             onClick={onClose}

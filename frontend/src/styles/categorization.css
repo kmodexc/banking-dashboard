@@ -22,7 +22,7 @@
 .modal-header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
 }
 .modal-header h2 {
@@ -32,9 +32,20 @@
   font-size: 1.35rem;
 }
 .close-button {
-  border-color: var(--line);
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
   color: var(--muted);
-  font-size: 1.5rem;
+  background: transparent;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.close-button:hover,
+.close-button:focus-visible {
+  color: var(--ink);
+  background: var(--wash);
 }
 .detail-amount {
   display: flex;
@@ -394,6 +405,11 @@
 .rule-list-heading p {
   margin-bottom: 0;
 }
+.rule-list-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
 .rule-list-total {
   display: grid;
   min-width: 6rem;
@@ -446,29 +462,33 @@
   min-width: 8.5rem;
   margin: 0;
 }
-.rule-list-actions {
-  display: grid;
-  gap: 0.7rem;
-  margin-top: 0.75rem;
-  padding-bottom: 0.9rem;
-  border-bottom: 1px solid var(--line);
+.rule-list-header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
 }
-.rule-list-actions .category-actions {
-  justify-content: flex-start;
+.rule-list-header-actions .button {
+  white-space: nowrap;
 }
 .rule-list-status {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+.rule-list-status .muted {
+  text-align: right;
+}
+.rule-list-message {
+  margin: 0.75rem 0 0;
 }
 .rule-list-results {
   color: var(--ink);
   font-size: 0.78rem;
   font-weight: 700;
-}
-.rule-list-actions .category-auth-notice {
-  margin: 0;
 }
 .recent-rule-list {
   display: grid;
@@ -619,8 +639,29 @@
   padding-top: 1rem;
   border-top: 1px solid var(--line);
 }
+.rule-danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.4rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ffd1cc;
+}
+.rule-danger-copy {
+  display: grid;
+  gap: 0.15rem;
+}
+.rule-danger-copy strong {
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+.rule-danger-copy span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
 .rule-delete-confirmation {
-  margin-top: 1.2rem;
+  width: 100%;
   padding: 0.85rem 1rem;
   border: 1px solid #ffd1cc;
   border-radius: 10px;
@@ -658,8 +699,13 @@
   .rule-list-heading {
     flex-direction: column;
   }
+  .rule-list-header-right {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
   .rule-list-total {
-    align-self: stretch;
+    align-self: flex-start;
   }
   .rule-list-toolbar {
     align-items: stretch;
@@ -673,10 +719,10 @@
     width: 100%;
     justify-content: space-between;
   }
-  .rule-list-actions .category-actions {
+  .rule-list-header-actions {
     justify-content: stretch;
   }
-  .rule-list-actions .category-actions .button {
+  .rule-list-header-actions .button {
     flex: 1 1 auto;
   }
   .rule-list-status {
@@ -698,5 +744,12 @@
   }
   .rule-form-created {
     text-align: left;
+  }
+  .rule-danger-zone {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .rule-danger-zone .button {
+    width: 100%;
   }
 }
