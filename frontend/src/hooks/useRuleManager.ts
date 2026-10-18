@@ -50,27 +50,32 @@ export function useRuleManager({
     setMessage('');
   }
 
-  function saveEditing(previous: CategoryRule): void {
-    if (!draft) return;
+  function saveEditing(previous: CategoryRule, nextDraft?: CategoryRule): string | null {
+    const draftToSave = nextDraft ?? draft;
+    if (!draftToSave) return null;
     const result = CategoryRuleSchema.safeParse({
-      ...draft,
-      keyword: draft.keyword.trim(),
-      category: draft.category.trim(),
+      ...draftToSave,
+      keyword: draftToSave.keyword.trim(),
+      category: draftToSave.category.trim(),
     });
     if (!result.success) {
-      setMessage('Rules need a keyword, category, and valid search column.');
-      return;
+      const message = 'Rules need a keyword, category, and valid search column.';
+      setMessage(message);
+      return message;
     }
     const nextKey = ruleKey(result.data);
     if (
       nextKey !== ruleKey(previous) &&
       rules.some((entry) => entry.source === 'user' && ruleKey(entry.rule) === nextKey)
     ) {
-      setMessage('A user rule with the same keyword, category, and search column already exists.');
-      return;
+      const message =
+        'A user rule with the same keyword, category, and search column already exists.';
+      setMessage(message);
+      return message;
     }
     onUpdate(previous, result.data);
     cancelEditing();
+    return null;
   }
 
   function deleteRule(rule: CategoryRule): void {

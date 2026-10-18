@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { ruleKey } from '../../data/rules';
 import type { CategoryRule, ManagedRule, RuleCategoryOption } from '../../types';
 import { RuleDetailsModal } from './RuleDetailsModal';
@@ -34,9 +34,12 @@ function addedAtLabel(rule: CategoryRule): string {
 export function RuleSummaryList({
   rules,
   categories,
+  title = 'Recently added rules',
+  description = 'Select a rule to view its details.',
+  headerMeta,
+  toolbar,
   listLabel = 'Recently added rules',
   emptyMessage = 'No rules added yet.',
-  embedded = false,
   editingKey,
   draft,
   onStartEditing,
@@ -47,14 +50,17 @@ export function RuleSummaryList({
 }: {
   rules: RuleEntry[];
   categories?: RuleCategoryOption[];
+  title?: string;
+  description?: string;
+  headerMeta?: ReactNode;
+  toolbar?: ReactNode;
   listLabel?: string;
   emptyMessage?: string;
-  embedded?: boolean;
   editingKey?: string | null;
   draft?: CategoryRule | null;
   onStartEditing?: (entry: ManagedRule) => void;
   onDraftChange?: (rule: CategoryRule) => void;
-  onSave?: (rule: CategoryRule) => void;
+  onSave?: (previous: CategoryRule, next: CategoryRule) => string | null;
   onCancel?: () => void;
   onDelete?: (rule: CategoryRule) => void;
 }): ReactElement {
@@ -74,30 +80,31 @@ export function RuleSummaryList({
   }, [rules, sort]);
 
   return (
-    <section
-      className={`recent-rules${embedded ? ' recent-rules-embedded' : ' panel'}`}
-      aria-labelledby="recent-rules-heading"
-    >
+    <section className="recent-rules panel" aria-labelledby="recent-rules-heading">
       <div className="recent-rules-heading">
         <div>
-          <h2 id="recent-rules-heading">Recently added rules</h2>
-          <p className="muted small">Select a rule to view its details.</p>
+          <h2 id="recent-rules-heading">{title}</h2>
+          <p className="muted small">{description}</p>
         </div>
-        <label className="rule-sort">
-          Sort by
-          <select
-            aria-label={`${listLabel} sort order`}
-            value={sort}
-            onChange={(event) => setSort(event.currentTarget.value as RuleSort)}
-          >
-            <option value="time">Time added</option>
-            <option value="name">Name</option>
-            <option value="category">Category</option>
-          </select>
-        </label>
+        <div className="recent-rules-header-controls">
+          {headerMeta}
+          <label className="rule-sort">
+            Sort by
+            <select
+              aria-label={`${listLabel} sort order`}
+              value={sort}
+              onChange={(event) => setSort(event.currentTarget.value as RuleSort)}
+            >
+              <option value="time">Time added</option>
+              <option value="name">Name</option>
+              <option value="category">Category</option>
+            </select>
+          </label>
+        </div>
       </div>
+      {toolbar && <div className="rule-summary-toolbar">{toolbar}</div>}
       {sortedRules.length ? (
-        <ol className={`recent-rule-list${embedded ? ' rule-list' : ''}`} aria-label={listLabel}>
+        <ol className="recent-rule-list" aria-label={listLabel}>
           {sortedRules.map((entry) => {
             const rule = getRule(entry);
             const key = ruleKey(rule);
@@ -112,7 +119,7 @@ export function RuleSummaryList({
                     draft={editingDraft}
                     categories={categories}
                     onChange={onDraftChange}
-                    onSave={() => onSave(rule)}
+                    onSave={() => onSave(rule, editingDraft)}
                     onCancel={onCancel}
                   />
                 ) : (
@@ -164,6 +171,9 @@ export function RuleSummaryList({
         <RuleDetailsModal
           rule={getRule(selectedEntry)}
           categoryLabel={getCategoryLabel(selectedEntry)}
+          categories={categories}
+          onSave={onSave ? (next) => onSave(getRule(selectedEntry), next) : undefined}
+          onDelete={onDelete ? () => onDelete(getRule(selectedEntry)) : undefined}
           onClose={() => setSelectedEntry(null)}
         />
       )}

@@ -105,6 +105,41 @@ describe('rule manager', () => {
     expect(onDelete).toHaveBeenCalledWith(userRule);
   });
 
+  it('edits and deletes a rule from its details modal', () => {
+    const onUpdate = vi.fn();
+    const onDelete = vi.fn();
+    render(
+      <RuleManager
+        rules={[rules[0]!]}
+        categories={[
+          { value: 'groceries', label: 'groceries' },
+          { value: 'restaurant', label: 'restaurant' },
+        ]}
+        rulesToExport={[userRule]}
+        onImport={vi.fn()}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+        onRemoveAll={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /SPC\.CAFE/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit rule' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Edit rule keyword' }), {
+      target: { value: 'SPC.BAKERY' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save rule' }));
+    expect(onUpdate).toHaveBeenCalledWith(userRule, {
+      keyword: 'SPC.BAKERY',
+      category: 'groceries',
+      column: 'recipient',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /SPC\.CAFE/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete rule' }));
+    expect(onDelete).toHaveBeenCalledWith(userRule);
+  });
+
   it('imports a validated replacement for editable rules', async () => {
     const onImport = vi.fn();
     render(
