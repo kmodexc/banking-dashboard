@@ -394,16 +394,17 @@ export function App(): ReactElement {
                   onSyncRules={() => void replaceRules(userRules, userCategoryState)}
                   onDeleteServerRules={() => void removePrivateServerRules()}
                   ruleSyncStatus={ruleSyncStatus}
-                />
-                <RuleManager
-                  rules={managedRules}
-                  categories={ruleCategoryOptions}
-                  rulesToExport={userRules}
-                  onImport={replaceLocalRules}
-                  onUpdate={updateUserRule}
-                  onDelete={deleteUserRule}
-                  onRemoveAll={() => replaceLocalRules([])}
-                />
+                >
+                  <RuleManager
+                    rules={managedRules}
+                    categories={ruleCategoryOptions}
+                    rulesToExport={userRules}
+                    onImport={replaceLocalRules}
+                    onUpdate={updateUserRule}
+                    onDelete={deleteUserRule}
+                    onRemoveAll={() => replaceLocalRules([])}
+                  />
+                </Categories>
               </>
             )}
             {tab === 'all' && (

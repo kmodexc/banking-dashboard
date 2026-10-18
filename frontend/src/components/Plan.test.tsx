@@ -90,6 +90,22 @@ describe('plan tab', () => {
     expect(screen.getByText('€10.00 over budget')).toBeInTheDocument();
   });
 
+  it('switches from the progress list to the bar chart view', () => {
+    render(<PlanHarness />);
+
+    expect(screen.getByRole('progressbar', { name: 'Food spending progress' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Bar chart' }));
+
+    expect(screen.getByRole('img', { name: 'Budget spending bar chart' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('progressbar', { name: 'Food spending progress' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: /Food: €50.00 spent, €100.00 planned/ }),
+    ).toBeInTheDocument();
+  });
+
   it('can move to a future month without imported transactions', () => {
     render(<PlanHarness />);
 

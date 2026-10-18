@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import type { AuthSnapshot, RulePreferences } from '../types';
 import type { CategoryEntry, UserCategoryState } from '../data/categories';
 import { CategoryEditor } from './CategoryEditor';
@@ -17,6 +17,7 @@ export function Categories({
   onSyncRules,
   onDeleteServerRules,
   ruleSyncStatus,
+  children,
 }: {
   auth: AuthSnapshot;
   entries: CategoryEntry[];
@@ -30,6 +31,7 @@ export function Categories({
   onSyncRules: () => void;
   onDeleteServerRules: () => void;
   ruleSyncStatus: string;
+  children?: ReactNode;
 }): ReactElement {
   return (
     <section id="categories-tab" className="tab-panel">
@@ -41,6 +43,7 @@ export function Categories({
         onDelete={onDelete}
         onImport={onImport}
       />
+      {children}
       <RuleSharingSettings
         auth={auth}
         rulePreferences={rulePreferences}

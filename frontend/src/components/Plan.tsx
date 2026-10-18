@@ -5,10 +5,14 @@ import type { BudgetPreferences } from '../data/preferences';
 import type { AuthSnapshot } from '../types';
 import type { Transaction } from '../types';
 import { formatPeriod, money } from '../utils/format';
+import { PlanBarChart } from './PlanBarChart';
+import { BudgetStorageSettings } from './BudgetStorageSettings';
 import { PeriodHeader } from './PeriodHeader';
+import { PlanProgressList } from './PlanProgressList';
+import type { PlanBudgetRow } from './planViewTypes';
 
 type BudgetMode = 'default' | 'monthly';
-const MAX_VISUAL_PERCENTAGE = 150;
+type PlanView = 'list' | 'chart';
 
 function shiftPeriod(period: string, offset: number): string {
   const [year, month] = period.split('-').map(Number);
@@ -51,6 +55,7 @@ export function Plan({
 }): ReactElement {
   const [period, setPeriod] = useState(initialPeriod || currentPeriod());
   const [mode, setMode] = useState<BudgetMode>('monthly');
+  const [view, setView] = useState<PlanView>('list');
   const monthlyBudgets = budgets.monthly[period] ?? {};
   const rows = transactions.filter(
     (transaction) => transaction.period === period && transaction.type === 'Ausgang',
@@ -71,7 +76,7 @@ export function Plan({
       ),
     [categories, spentByCategory],
   );
-  const budgetRows = visibleCategories.map((category) => {
+  const budgetRows: PlanBudgetRow[] = visibleCategories.map((category) => {
     const spent = spentByCategory[category] ?? 0;
     const hasMonthlyBudget = hasValue(monthlyBudgets, category);
     const budget = hasMonthlyBudget ? monthlyBudgets[category]! : (budgets.defaults[category] ?? 0);
@@ -176,67 +181,6 @@ export function Plan({
         )}
       </article>
 
-      <article className="panel budget-storage-panel">
-        <div className="panel-heading">
-          <div>
-            <h2>Private budget storage</h2>
-            <p className="muted">
-              Keep your planned budgets available across devices in your private account copy.
-              Transaction data is never uploaded by this feature.
-            </p>
-          </div>
-        </div>
-        <fieldset className="budget-preferences" disabled={!auth.token}>
-          <legend>Online storage</legend>
-          <label className="preference-choice">
-            <input
-              type="checkbox"
-              checked={budgetPreferences.storePrivateBudgets}
-              onChange={(event) =>
-                onBudgetPreferencesChange({
-                  ...budgetPreferences,
-                  storePrivateBudgets: event.currentTarget.checked,
-                })
-              }
-            />
-            <span>
-              <strong>Save my budgets privately on the server</strong>
-              <small>
-                Enabled by default after sign-in. Turn it off to keep future budget changes only in
-                this browser.
-              </small>
-            </span>
-          </label>
-        </fieldset>
-        {!auth.token && (
-          <p className="notice category-auth-notice">
-            Sign in above to enable private online budget storage. Until then, budgets remain local
-            to this browser.
-          </p>
-        )}
-        {auth.token && (
-          <div className="category-actions rule-storage-actions">
-            <button
-              className="button secondary danger-button"
-              type="button"
-              onClick={onDeleteServerBudgets}
-            >
-              Delete private server budgets
-            </button>
-          </div>
-        )}
-        {budgetSyncStatus && (
-          <p
-            className={`rule-sync-status${budgetSyncStatus.startsWith('Could not ') ? ' rule-sync-status-error' : ''}`}
-            role="status"
-            aria-live="polite"
-          >
-            {budgetSyncStatus.startsWith('Could not ') && <strong>Warning: </strong>}
-            {budgetSyncStatus}
-          </p>
-        )}
-      </article>
-
       <article className="panel plan-progress-panel">
         <div className="panel-heading">
           <div>
@@ -265,51 +209,40 @@ export function Plan({
             <strong>{visibleCategories.length}</strong>
           </div>
         </div>
-        <div className="plan-progress-list">
-          {budgetRows.map((row) => {
-            const width =
-              row.percentage === null
-                ? 0
-                : (Math.min(row.percentage, MAX_VISUAL_PERCENTAGE) / MAX_VISUAL_PERCENTAGE) * 100;
-            const isOverBudget = row.percentage !== null && row.percentage > 100;
-            const overage = isOverBudget ? row.spent - row.budget : 0;
-            return (
-              <div className="plan-progress-row" key={row.category}>
-                <div className="plan-progress-heading">
-                  <strong>{row.category}</strong>
-                  <span className={isOverBudget ? 'over-budget-text' : 'muted'}>
-                    {row.percentage === null ? 'No budget' : `${row.percentage}%`}
-                  </span>
-                </div>
-                <div
-                  className={`plan-progress-track${isOverBudget ? ' over-budget' : ''}`}
-                  role="progressbar"
-                  aria-label={`${row.category} spending progress`}
-                  aria-valuemin={0}
-                  aria-valuemax={MAX_VISUAL_PERCENTAGE}
-                  aria-valuenow={row.percentage === null ? 0 : row.percentage}
-                >
-                  <span className="plan-budget-marker" />
-                  <span className="plan-progress-fill" style={{ width: `${width}%` }} />
-                </div>
-                <div className="plan-progress-details">
-                  <span>{money(row.spent)} spent</span>
-                  <span>
-                    {row.budget ? `${money(row.budget)} planned` : 'Set a budget above'}
-                    {row.hasMonthlyBudget && <em> · month-specific</em>}
-                  </span>
-                </div>
-                {isOverBudget && (
-                  <strong className="over-budget-text">{money(overage)} over budget</strong>
-                )}
-              </div>
-            );
-          })}
+        <div className="plan-view-switch plan-mode-switch" role="tablist" aria-label="Budget view">
+          <button
+            className={`plan-mode-button${view === 'list' ? ' active' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={view === 'list'}
+            onClick={() => setView('list')}
+          >
+            Category bars
+          </button>
+          <button
+            className={`plan-mode-button${view === 'chart' ? ' active' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={view === 'chart'}
+            onClick={() => setView('chart')}
+          >
+            Bar chart
+          </button>
         </div>
-        {!budgetRows.length && (
-          <p className="muted empty-copy">Add categories to start planning.</p>
+        {view === 'list' ? (
+          <PlanProgressList rows={budgetRows} />
+        ) : (
+          <PlanBarChart rows={budgetRows} />
         )}
       </article>
+
+      <BudgetStorageSettings
+        auth={auth}
+        budgetPreferences={budgetPreferences}
+        budgetSyncStatus={budgetSyncStatus}
+        onBudgetPreferencesChange={onBudgetPreferencesChange}
+        onDeleteServerBudgets={onDeleteServerBudgets}
+      />
     </section>
   );
 }
