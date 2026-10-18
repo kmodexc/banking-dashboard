@@ -38,7 +38,13 @@ export function CategorizeUnknown({
   }
 
   function addRule(rule: CategoryRule): void {
-    selectTransaction(unknown.find((transaction) => !matchesRule(transaction, rule)));
+    const selectedIndex = selected ? unknown.findIndex((row) => row.id === selected.id) : -1;
+    const following = unknown.slice(selectedIndex + 1);
+    const preceding = unknown.slice(0, Math.max(selectedIndex, 0));
+    const nextTransaction =
+      following.find((transaction) => !matchesRule(transaction, rule)) ??
+      preceding.find((transaction) => !matchesRule(transaction, rule));
+    selectTransaction(nextTransaction);
     onAddRule(rule);
   }
 

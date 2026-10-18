@@ -36,7 +36,10 @@ const rulesController: RulesController = {
 };
 
 describe('categorize unknown', () => {
-  function renderPage(transactions: Transaction[] = [transaction]): void {
+  function renderPage(
+    transactions: Transaction[] = [transaction],
+    categories: string[] = [],
+  ): void {
     render(
       <CategorizeUnknown
         transactions={transactions}
@@ -46,6 +49,7 @@ describe('categorize unknown', () => {
         onAddRule={vi.fn()}
         onAddRules={vi.fn()}
         rulesController={rulesController}
+        categories={categories}
       />,
     );
   }
@@ -73,5 +77,25 @@ describe('categorize unknown', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Previous unknown transaction' }));
     expect(screen.getByLabelText('Keyword')).toHaveValue('UNKNOWN SHOP');
+  });
+
+  it('selects the transaction after the one just categorized', () => {
+    const unknownTransactions = Array.from({ length: 5 }, (_, index) => ({
+      ...transaction,
+      id: `2026-01-${5 - index}-1`,
+      date: `2026-01-${String(5 - index).padStart(2, '0')}`,
+      recipient: `UNKNOWN ${index + 1}`,
+    }));
+
+    renderPage(unknownTransactions, ['items']);
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Unknown transaction' }), {
+      target: { value: unknownTransactions[2]!.id },
+    });
+    expect(screen.getByLabelText('Keyword')).toHaveValue('UNKNOWN 3');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save rule' }));
+
+    expect(screen.getByLabelText('Keyword')).toHaveValue('UNKNOWN 4');
   });
 });
