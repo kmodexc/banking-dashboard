@@ -32,7 +32,7 @@ export function AllTransactions({
     <section id="all-transactions-tab" className="tab-panel">
       <div className="period-header">
         <div>
-          <span className="eyebrow accent-eyebrow">All transactions</span>
+          <span className="eyebrow accent-eyebrow">Transactions</span>
           <h2 className="period-title">Every imported transaction</h2>
           <p className="muted period-subtitle">All periods, income, and expenses are shown here.</p>
         </div>

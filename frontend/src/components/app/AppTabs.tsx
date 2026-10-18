@@ -2,12 +2,12 @@ import type { ReactElement } from 'react';
 import { APP_TABS, type AppTab } from './appTabs';
 
 const TAB_LABELS: Record<AppTab, string> = {
-  dashboard: 'Dashboard',
-  plan: 'Plan',
-  unknown: 'Categorize unknown',
-  categories: 'Categories',
-  all: 'All transactions',
-  account: 'Account',
+  dashboard: 'Overview',
+  plan: 'Budget',
+  unknown: 'Uncategorized',
+  categories: 'Categories & rules',
+  all: 'Transactions',
+  account: 'Account & sync',
 };
 
 export function AppTabs({

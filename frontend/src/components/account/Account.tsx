@@ -47,7 +47,7 @@ export function Account({
     <section id="account-tab" className="tab-panel account-tab">
       <div className="account-heading">
         <div>
-          <span className="eyebrow accent-eyebrow">Account</span>
+          <span className="eyebrow accent-eyebrow">Account &amp; sync</span>
           <h2>Account and data</h2>
           <p className="muted">
             Review where your dashboard data lives and control private synchronization.

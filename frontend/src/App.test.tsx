@@ -98,7 +98,7 @@ describe('dashboard UI', () => {
     const metrics = within(document.querySelector('#metrics')!);
     expect(metrics.getAllByText('€1,000.00')).toHaveLength(2);
 
-    fireEvent.click(screen.getByRole('button', { name: 'All transactions' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Transactions' }));
     expect(screen.getByText('SALARY')).toBeInTheDocument();
     expect(screen.getByText('Income', { selector: '.type-badge' })).toBeInTheDocument();
     expect(screen.getByText('2 rows · click a row for details')).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe('dashboard UI', () => {
       target: { files: [new File([csv], 'transactions.csv', { type: 'text/csv' })] },
     });
     await screen.findByText('1 transactions loaded');
-    fireEvent.click(screen.getByRole('button', { name: 'Categorize unknown' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Uncategorized' }));
     fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'items' } });
     fireEvent.submit(screen.getByRole('button', { name: 'Save rule' }).closest('form')!);
     await waitFor(() => expect(screen.getByText('0 rows')).toBeInTheDocument());
@@ -151,7 +151,7 @@ describe('dashboard UI', () => {
       },
     });
     await screen.findByText('2 transactions loaded');
-    fireEvent.click(screen.getByRole('button', { name: 'Categorize unknown' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Uncategorized' }));
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Unknown transaction' }), {
       target: { value: '2026-01-02-2' },
@@ -174,7 +174,7 @@ describe('dashboard UI', () => {
       },
     });
     await screen.findByText('2 transactions loaded');
-    fireEvent.click(screen.getByRole('button', { name: 'Categorize unknown' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Uncategorized' }));
     fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'items' } });
     fireEvent.submit(screen.getByRole('button', { name: 'Save rule' }).closest('form')!);
 
@@ -192,7 +192,7 @@ describe('dashboard UI', () => {
       target: { files: [new File([csv], 'transactions.csv', { type: 'text/csv' })] },
     });
     await screen.findByText('1 transactions loaded');
-    fireEvent.click(screen.getByRole('button', { name: 'Categories' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Categories & rules' }));
 
     fireEvent.change(screen.getByLabelText('New category name'), {
       target: { value: 'groceries' },
@@ -205,7 +205,7 @@ describe('dashboard UI', () => {
   it('shows account storage controls before transactions are imported', () => {
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Account & sync' }));
 
     expect(screen.getByRole('heading', { name: 'Account and data' })).toBeInTheDocument();
     expect(screen.getByText('0 imported transactions')).toBeInTheDocument();

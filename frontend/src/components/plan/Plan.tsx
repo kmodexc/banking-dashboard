@@ -36,7 +36,7 @@ export function Plan({
   return (
     <section id="plan-tab" className="tab-panel">
       <PeriodHeader
-        eyebrow="Plan"
+        eyebrow="Budget"
         period={period}
         subtitle={`${rows.length} outgoing ${rows.length === 1 ? 'transaction' : 'transactions'} in this month`}
         navigationLabel="Navigate between plan months"

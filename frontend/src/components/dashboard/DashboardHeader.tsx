@@ -20,7 +20,7 @@ export function DashboardHeader({
 }): ReactElement {
   return (
     <PeriodHeader
-      eyebrow="Dashboard"
+      eyebrow="Overview"
       period={period}
       subtitle={`${displayedCount} of ${totalCount} ${transactionLabel} transactions shown`}
       navigationLabel="Navigate between months"
