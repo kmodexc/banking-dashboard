@@ -47,6 +47,7 @@ export interface FinanceWorkspace {
   transactions: Transaction[];
   rules: CategoryRule[];
   userRules: CategoryRule[];
+  categorizedUserRules: CategoryRule[];
   localRuleCount: number;
   managedRules: ManagedRule[];
   ruleCategoryOptions: RuleCategoryOption[];
@@ -135,6 +136,14 @@ export function useFinanceWorkspace(
         category: categoryName(userCategoryState, rule.category),
       })),
     [activeRules, userCategoryState],
+  );
+  const categorizedUserRules = useMemo(
+    () =>
+      userRules.map((rule) => ({
+        ...rule,
+        category: categoryName(userCategoryState, rule.category),
+      })),
+    [userCategoryState, userRules],
   );
   const transactions = useMemo(() => {
     const resolvedOverrides = Object.fromEntries(
@@ -278,6 +287,7 @@ export function useFinanceWorkspace(
     transactions,
     rules,
     userRules,
+    categorizedUserRules,
     localRuleCount: localRules.length,
     managedRules,
     ruleCategoryOptions,
