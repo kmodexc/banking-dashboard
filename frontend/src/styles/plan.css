@@ -180,89 +180,20 @@
   background: linear-gradient(90deg, #ef8354, #b42318);
 }
 .plan-bar-chart {
-  display: grid;
-  gap: 0.65rem;
+  min-width: 0;
 }
-.plan-chart-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.85rem;
-  color: var(--muted);
-  font-size: 0.76rem;
+.plan-chart-canvas {
+  width: 100%;
 }
-.plan-chart-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
+.plan-box-plot {
+  min-width: 0;
 }
-.plan-chart-swatch {
-  display: inline-block;
-  width: 0.7rem;
-  height: 0.7rem;
-  border-radius: 3px;
+.plan-box-plot-canvas {
+  width: 100%;
 }
-.plan-chart-swatch.spent {
-  background: #1769e0;
-}
-.plan-chart-swatch.planned {
-  background: #cbd3dc;
-}
-.plan-chart-axis {
-  display: flex;
-  justify-content: space-between;
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-variant-numeric: tabular-nums;
-}
-.plan-chart-list {
-  display: grid;
-  gap: 1rem;
-}
-.plan-chart-row {
-  display: grid;
-  gap: 0.4rem;
-}
-.plan-chart-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.plan-chart-heading span {
-  font-size: 0.82rem;
-  font-variant-numeric: tabular-nums;
-}
-.plan-chart-track {
-  position: relative;
-  height: 2rem;
-  overflow: hidden;
-  border-radius: 8px;
-  background: repeating-linear-gradient(
-    90deg,
-    #edf1f5 0,
-    #edf1f5 calc(20% - 1px),
-    #dfe5eb calc(20% - 1px),
-    #dfe5eb 20%
-  );
-}
-.plan-chart-bar {
-  position: absolute;
-  left: 0;
-  border-radius: 0 6px 6px 0;
-  transition: width 180ms ease;
-}
-.plan-chart-planned {
-  top: 0.3rem;
-  height: 1.4rem;
-  background: #cbd3dc;
-}
-.plan-chart-spent {
-  z-index: 1;
-  top: 0.65rem;
-  height: 0.7rem;
-  background: linear-gradient(90deg, #2a9d8f, #1769e0);
-}
-.plan-chart-spent.over-budget {
-  background: linear-gradient(90deg, #ef8354, #b42318);
+.plan-box-plot-note {
+  margin: 0.8rem 0 0;
+  font-size: 0.78rem;
 }
 .over-budget-text {
   color: var(--danger);

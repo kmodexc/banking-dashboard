@@ -9,6 +9,26 @@ import { Plan } from './Plan';
 
 const transactions: Transaction[] = [
   {
+    id: 'food-previous-1',
+    date: '2025-12-02',
+    period: '2025-12',
+    recipient: 'GROCERY SHOP',
+    purpose: 'Food',
+    type: 'Ausgang',
+    amount: -70,
+    category: 'Food',
+  },
+  {
+    id: 'food-previous-2',
+    date: '2025-11-02',
+    period: '2025-11',
+    recipient: 'GROCERY SHOP',
+    purpose: 'Food',
+    type: 'Ausgang',
+    amount: -30,
+    category: 'Food',
+  },
+  {
     id: 'food-1',
     date: '2026-01-02',
     period: '2026-01',
@@ -91,7 +111,7 @@ describe('plan tab', () => {
   });
 
   it('switches from the progress list to the bar chart view', () => {
-    render(<PlanHarness />);
+    const { container } = render(<PlanHarness />);
 
     expect(screen.getByRole('progressbar', { name: 'Food spending progress' })).toBeInTheDocument();
 
@@ -101,9 +121,7 @@ describe('plan tab', () => {
     expect(
       screen.queryByRole('progressbar', { name: 'Food spending progress' }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('img', { name: /Food: €50.00 spent, €100.00 planned/ }),
-    ).toBeInTheDocument();
+    expect(container.querySelector('.plan-chart-canvas')).toBeInTheDocument();
   });
 
   it('can move to a future month without imported transactions', () => {
@@ -113,5 +131,14 @@ describe('plan tab', () => {
 
     expect(screen.getByRole('heading', { name: 'February 2026' })).toBeInTheDocument();
     expect(screen.getByText('0 outgoing transactions in this month')).toBeInTheDocument();
+  });
+
+  it('shows historical spending in the box plot view', () => {
+    render(<PlanHarness />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'History box plot' }));
+
+    expect(screen.getByRole('img', { name: 'Historical spending box plot' })).toBeInTheDocument();
+    expect(screen.getByText(/middle 50% of spending across 2 previous months/)).toBeInTheDocument();
   });
 });

@@ -6,13 +6,14 @@ import type { AuthSnapshot } from '../types';
 import type { Transaction } from '../types';
 import { formatPeriod, money } from '../utils/format';
 import { PlanBarChart } from './PlanBarChart';
+import { PlanBoxPlot } from './PlanBoxPlot';
 import { BudgetStorageSettings } from './BudgetStorageSettings';
 import { PeriodHeader } from './PeriodHeader';
 import { PlanProgressList } from './PlanProgressList';
 import type { PlanBudgetRow } from './planViewTypes';
 
 type BudgetMode = 'default' | 'monthly';
-type PlanView = 'list' | 'chart';
+type PlanView = 'list' | 'chart' | 'boxplot';
 
 function shiftPeriod(period: string, offset: number): string {
   const [year, month] = period.split('-').map(Number);
@@ -28,6 +29,30 @@ function currentPeriod(): string {
 
 function hasValue(map: Record<string, number>, category: string): boolean {
   return Object.prototype.hasOwnProperty.call(map, category);
+}
+
+function percentile(sortedValues: number[], fraction: number): number {
+  const position = (sortedValues.length - 1) * fraction;
+  const lower = Math.floor(position);
+  const upper = Math.ceil(position);
+  if (lower === upper) return sortedValues[lower] ?? 0;
+  const weight = position - lower;
+  return (sortedValues[lower] ?? 0) * (1 - weight) + (sortedValues[upper] ?? 0) * weight;
+}
+
+function summarizeHistory(values: number[]) {
+  if (!values.length) return null;
+  const sortedValues = [...values].sort((left, right) => left - right);
+  const total = sortedValues.reduce((sum, value) => sum + value, 0);
+  return {
+    months: sortedValues.length,
+    min: sortedValues[0] ?? 0,
+    q1: percentile(sortedValues, 0.25),
+    median: percentile(sortedValues, 0.5),
+    average: total / sortedValues.length,
+    q3: percentile(sortedValues, 0.75),
+    max: sortedValues[sortedValues.length - 1] ?? 0,
+  };
 }
 
 export function Plan({
@@ -76,12 +101,47 @@ export function Plan({
       ),
     [categories, spentByCategory],
   );
+  const historicalPeriods = useMemo(
+    () =>
+      [
+        ...new Set(
+          transactions
+            .filter(
+              (transaction) => transaction.type === 'Ausgang' && transaction.period !== period,
+            )
+            .map((transaction) => transaction.period),
+        ),
+      ].sort(),
+    [period, transactions],
+  );
+  const historicalSpent = useMemo(() => {
+    const totals = new Map<string, Record<string, number>>();
+    historicalPeriods.forEach((historicalPeriod) => totals.set(historicalPeriod, {}));
+    transactions.forEach((transaction) => {
+      if (transaction.type !== 'Ausgang' || transaction.period === period) return;
+      const monthTotals = totals.get(transaction.period);
+      if (!monthTotals) return;
+      monthTotals[transaction.category] =
+        (monthTotals[transaction.category] ?? 0) + Math.abs(transaction.amount);
+    });
+    return totals;
+  }, [historicalPeriods, period, transactions]);
   const budgetRows: PlanBudgetRow[] = visibleCategories.map((category) => {
     const spent = spentByCategory[category] ?? 0;
     const hasMonthlyBudget = hasValue(monthlyBudgets, category);
     const budget = hasMonthlyBudget ? monthlyBudgets[category]! : (budgets.defaults[category] ?? 0);
     const percentage = budget > 0 ? Math.round((spent / budget) * 100) : null;
-    return { category, spent, budget, hasMonthlyBudget, percentage };
+    const historyValues = historicalPeriods.map(
+      (historicalPeriod) => historicalSpent.get(historicalPeriod)?.[category] ?? 0,
+    );
+    return {
+      category,
+      spent,
+      budget,
+      hasMonthlyBudget,
+      percentage,
+      history: summarizeHistory(historyValues),
+    };
   });
   const totalSpent = budgetRows.reduce((sum, row) => sum + row.spent, 0);
   const totalBudget = budgetRows.reduce((sum, row) => sum + row.budget, 0);
@@ -228,11 +288,22 @@ export function Plan({
           >
             Bar chart
           </button>
+          <button
+            className={`plan-mode-button${view === 'boxplot' ? ' active' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={view === 'boxplot'}
+            onClick={() => setView('boxplot')}
+          >
+            History box plot
+          </button>
         </div>
         {view === 'list' ? (
           <PlanProgressList rows={budgetRows} />
-        ) : (
+        ) : view === 'chart' ? (
           <PlanBarChart rows={budgetRows} />
+        ) : (
+          <PlanBoxPlot rows={budgetRows} />
         )}
       </article>
 
