@@ -1,0 +1,151 @@
+.plan-period-header {
+  margin-bottom: 1rem;
+}
+.plan-mode-switch {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.plan-mode-button {
+  border: 0;
+  border-radius: 7px;
+  padding: 0.55rem 0.8rem;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.plan-mode-button.active,
+.plan-mode-button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.plan-editor-panel {
+  margin-bottom: 1rem;
+}
+.plan-editor-panel .panel-heading p {
+  max-width: 680px;
+  margin-bottom: 0;
+}
+.budget-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.8rem;
+  margin-top: 1.15rem;
+}
+.budget-editor-row {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fbfcfd;
+  font-size: 0.9rem;
+}
+.budget-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+.budget-input-wrap input {
+  min-width: 0;
+  color: var(--ink);
+}
+.currency-prefix,
+.budget-suffix {
+  flex: 0 0 auto;
+}
+.budget-fallback {
+  color: var(--muted);
+  font-weight: 400;
+}
+.plan-progress-panel {
+  min-width: 0;
+}
+.plan-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin: 1rem 0 1.35rem;
+}
+.plan-summary-card {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.8rem;
+  border-radius: 10px;
+  background: var(--wash);
+}
+.plan-summary-card strong {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+.plan-progress-list {
+  display: grid;
+  gap: 1rem;
+}
+.plan-progress-row {
+  display: grid;
+  gap: 0.4rem;
+}
+.plan-progress-heading,
+.plan-progress-details {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.plan-progress-heading span,
+.plan-progress-details {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.plan-progress-details {
+  color: var(--muted);
+}
+.plan-progress-details em {
+  color: var(--accent);
+  font-style: normal;
+}
+.plan-progress-track {
+  height: 0.7rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf1f5;
+}
+.plan-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2a9d8f, #1769e0);
+  transition: width 180ms ease;
+}
+.plan-progress-track.over-budget .plan-progress-fill {
+  background: linear-gradient(90deg, #ef8354, #b42318);
+}
+.over-budget-text {
+  color: var(--danger);
+}
+@media (max-width: 650px) {
+  .plan-mode-switch {
+    display: flex;
+  }
+  .plan-mode-button {
+    flex: 1;
+  }
+  .plan-summary-grid {
+    grid-template-columns: 1fr;
+  }
+  .plan-progress-details {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+}

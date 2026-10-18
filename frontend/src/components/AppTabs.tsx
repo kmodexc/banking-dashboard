@@ -3,6 +3,7 @@ import { APP_TABS, type AppTab } from './appTabs';
 
 const TAB_LABELS: Record<AppTab, string> = {
   dashboard: 'Dashboard',
+  plan: 'Plan',
   unknown: 'Categorize unknown',
   categories: 'Categories',
   all: 'All transactions',

@@ -4,6 +4,12 @@ import { getAppConfig } from './config';
 import { readTransactions } from './data/csv';
 import { loadSessionTransactions, saveSessionTransactions } from './data/session';
 import {
+  loadBudgetPlan,
+  renameBudgetCategory,
+  saveBudgetPlan,
+  type BudgetPlan,
+} from './data/budgets';
+import {
   applyCategoryOverrides,
   applyRules,
   loadCategoryOverrides,
@@ -27,6 +33,7 @@ import type { AppTab } from './components/appTabs';
 import { AuthControls, FilePicker } from './components/AppChrome';
 import { Categories } from './components/Categories';
 import { Dashboard } from './components/Dashboard';
+import { Plan } from './components/Plan';
 import { RuleManager } from './components/RuleManager';
 import type { ManagedRule, RuleCategoryOption } from './components/RuleManager';
 import type { AuthSnapshot, CategoryRule, Transaction } from './types';
@@ -61,6 +68,7 @@ export function App(): ReactElement {
   const [categoryOverrides, setCategoryOverrides] = useState<Record<string, string>>(() =>
     loadCategoryOverrides(),
   );
+  const [budgetPlan, setBudgetPlan] = useState<BudgetPlan>(() => loadBudgetPlan());
   const [categoryStateStore, setCategoryStateStore] = useState<{
     userId: string | null;
     state: UserCategoryState;
@@ -208,6 +216,11 @@ export function App(): ReactElement {
     });
   }
 
+  function updateBudgetPlan(next: BudgetPlan): void {
+    saveBudgetPlan(next);
+    setBudgetPlan(next);
+  }
+
   function updateUserCategories(next: UserCategoryState): void {
     const storageUserId = auth.token ? categoryUserId : null;
     saveUserCategoryState(next, storageUserId);
@@ -229,6 +242,7 @@ export function App(): ReactElement {
       ...userCategoryState,
       categories,
     });
+    updateBudgetPlan(renameBudgetCategory(budgetPlan, entry.name, name));
   }
 
   function deleteUserCategory(entry: CategoryEntry): void {
@@ -335,6 +349,15 @@ export function App(): ReactElement {
                 selectedCategories={selectedCategories}
                 onCategoryFilterChange={setSelectedCategories}
                 onCategoryChange={changeCategory}
+              />
+            )}
+            {tab === 'plan' && (
+              <Plan
+                transactions={transactions}
+                categories={categories}
+                initialPeriod={activePeriod}
+                budgets={budgetPlan}
+                onBudgetsChange={updateBudgetPlan}
               />
             )}
             {tab === 'unknown' && (
