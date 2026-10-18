@@ -65,6 +65,20 @@
   color: var(--muted);
   font-weight: 400;
 }
+.budget-editor-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.15rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.budget-editor-total strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
 .plan-progress-panel {
   min-width: 0;
 }

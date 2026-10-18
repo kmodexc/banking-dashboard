@@ -93,6 +93,13 @@ export function updateBudgetValue(
   return { ...plan, monthly };
 }
 
+export function clearMonthlyBudget(plan: BudgetPlan, period: string): BudgetPlan {
+  if (!(period in plan.monthly)) return plan;
+  const monthly = { ...plan.monthly };
+  delete monthly[period];
+  return { ...plan, monthly };
+}
+
 export function renameBudgetCategory(
   plan: BudgetPlan,
   previousName: string,

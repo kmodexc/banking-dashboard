@@ -83,6 +83,9 @@ describe('plan tab', () => {
       '50',
     );
     expect(screen.getByText('€50.00 spent')).toBeInTheDocument();
+    expect(screen.getByText('Total planned for January 2026').parentElement).toHaveTextContent(
+      '€600.00 / month',
+    );
 
     fireEvent.click(screen.getByRole('tab', { name: 'This month' }));
     expect(screen.getByText('Using default: €100.00')).toBeInTheDocument();
@@ -95,6 +98,9 @@ describe('plan tab', () => {
       '63',
     );
     expect(screen.getByText('€80.00 planned')).toBeInTheDocument();
+    expect(screen.getByText('Total planned for January 2026').parentElement).toHaveTextContent(
+      '€580.00 / month',
+    );
     expect(screen.getByText('€80.00 planned').parentElement).toHaveTextContent('month-specific');
 
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Food monthly budget' }), {
@@ -108,6 +114,13 @@ describe('plan tab', () => {
       'over-budget',
     );
     expect(screen.getByText('€10.00 over budget')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset month-specific budgets' }));
+    expect(screen.getByText('€100.00 planned')).toBeInTheDocument();
+    expect(screen.getByText('€100.00 planned').parentElement).not.toHaveTextContent(
+      'month-specific',
+    );
+    expect(screen.getByRole('button', { name: 'Reset month-specific budgets' })).toBeDisabled();
   });
 
   it('switches from the progress list to the bar chart view', () => {
