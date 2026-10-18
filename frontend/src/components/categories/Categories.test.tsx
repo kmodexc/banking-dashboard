@@ -3,12 +3,23 @@ import { describe, expect, it, vi } from 'vitest';
 import { categoryEntries, type UserCategoryState } from '../../data/categories';
 import type { RulesController } from '../rules/ruleTypes';
 import { Categories } from './Categories';
+import type { CategoriesController } from './categoryTypes';
 
 const testState: UserCategoryState = {
   categories: [{ id: 'category-groceries', name: 'groceries', aliases: [] }],
   deletedIds: [],
 };
 const entries = categoryEntries(testState);
+const categoriesController: CategoriesController = {
+  entries,
+  state: testState,
+  actions: {
+    addCategory: vi.fn(),
+    renameCategory: vi.fn(),
+    deleteCategory: vi.fn(),
+    importCategories: vi.fn(),
+  },
+};
 const rulesController: RulesController = {
   rules: [],
   categories: [],
@@ -23,12 +34,7 @@ const rulesController: RulesController = {
 
 function props(overrides: Record<string, unknown> = {}) {
   return {
-    entries,
-    state: testState,
-    onAdd: vi.fn(),
-    onRename: vi.fn(),
-    onDelete: vi.fn(),
-    onImport: vi.fn(),
+    categoriesController,
     rulesController,
     ...overrides,
   };
@@ -40,7 +46,22 @@ describe('categories page', () => {
     const onRename = vi.fn();
     const onDelete = vi.fn();
     const onImport = vi.fn();
-    render(<Categories {...props({ onAdd, onRename, onDelete, onImport })} />);
+    render(
+      <Categories
+        {...props({
+          categoriesController: {
+            ...categoriesController,
+            actions: {
+              ...categoriesController.actions,
+              addCategory: onAdd,
+              renameCategory: onRename,
+              deleteCategory: onDelete,
+              importCategories: onImport,
+            },
+          },
+        })}
+      />,
+    );
 
     expect(screen.getByRole('button', { name: 'Add category' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Export categories' })).toBeEnabled();
@@ -71,7 +92,20 @@ describe('categories page', () => {
   it('allows users to add and rename categories', () => {
     const onAdd = vi.fn();
     const onRename = vi.fn();
-    render(<Categories {...props({ onAdd, onRename })} />);
+    render(
+      <Categories
+        {...props({
+          categoriesController: {
+            ...categoriesController,
+            actions: {
+              ...categoriesController.actions,
+              addCategory: onAdd,
+              renameCategory: onRename,
+            },
+          },
+        })}
+      />,
+    );
 
     fireEvent.change(screen.getByLabelText('New category name'), { target: { value: 'health' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add category' }));
@@ -86,7 +120,16 @@ describe('categories page', () => {
 
   it('imports a valid personal category file when signed in', async () => {
     const onImport = vi.fn();
-    render(<Categories {...props({ onImport })} />);
+    render(
+      <Categories
+        {...props({
+          categoriesController: {
+            ...categoriesController,
+            actions: { ...categoriesController.actions, importCategories: onImport },
+          },
+        })}
+      />,
+    );
 
     fireEvent.change(screen.getByLabelText('Import categories'), {
       target: {

@@ -7,6 +7,7 @@ import type { AppTab } from './components/app/appTabs';
 import { AuthControls, FilePicker } from './components/app/AppChrome';
 import type { AuthSnapshot } from './types';
 import { useFinanceWorkspace } from './hooks/useFinanceWorkspace';
+import { useCategoriesController } from './hooks/useCategoriesController';
 import { useRulesController } from './hooks/useRulesController';
 import { useTransactions } from './hooks/useTransactions';
 import './styles.css';
@@ -44,12 +45,7 @@ export function App(): ReactElement {
     budgetPreferences,
     budgetSyncStatus,
     categories,
-    categoryEntries,
     changeCategory,
-    deleteUserCategory,
-    addUserCategory,
-    renameUserCategory,
-    updateUserCategories,
     userCategoryState,
     transactions,
     rules,
@@ -83,6 +79,14 @@ export function App(): ReactElement {
     onUpdate: workspace.updateUserRule,
     onDelete: workspace.deleteUserRule,
     onRemoveAll: () => workspace.replaceLocalRules([]),
+  });
+  const categoriesController = useCategoriesController({
+    entries: workspace.categoryEntries,
+    state: workspace.userCategoryState,
+    onAdd: workspace.addUserCategory,
+    onRename: workspace.renameUserCategory,
+    onDelete: workspace.deleteUserCategory,
+    onImport: workspace.updateUserCategories,
   });
   const [tab, setTab] = useState<AppTab>('dashboard');
   const [selectedCategories, setSelectedCategories] = useState<string[] | null>(null);
@@ -126,12 +130,7 @@ export function App(): ReactElement {
       rulesController,
     },
     categories: {
-      entries: categoryEntries,
-      state: userCategoryState,
-      onAdd: addUserCategory,
-      onRename: renameUserCategory,
-      onDelete: deleteUserCategory,
-      onImport: updateUserCategories,
+      categoriesController,
       rulesController,
     },
     allTransactions: {

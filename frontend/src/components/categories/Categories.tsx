@@ -1,36 +1,19 @@
 import type { ReactElement } from 'react';
-import type { CategoryEntry, UserCategoryState } from '../../data/categories';
 import { RuleList } from '../rules/RuleList';
 import type { RulesController } from '../rules/ruleTypes';
 import { CategoryEditor } from './CategoryEditor';
+import type { CategoriesController } from './categoryTypes';
 
 export function Categories({
-  entries,
-  state,
-  onAdd,
-  onRename,
-  onDelete,
-  onImport,
+  categoriesController,
   rulesController,
 }: {
-  entries: CategoryEntry[];
-  state: UserCategoryState;
-  onAdd: (name: string) => void;
-  onRename: (entry: CategoryEntry, name: string) => void;
-  onDelete: (entry: CategoryEntry) => void;
-  onImport: (next: UserCategoryState) => void;
+  categoriesController: CategoriesController;
   rulesController: RulesController;
 }): ReactElement {
   return (
     <section id="categories-tab" className="tab-panel">
-      <CategoryEditor
-        entries={entries}
-        state={state}
-        onAdd={onAdd}
-        onRename={onRename}
-        onDelete={onDelete}
-        onImport={onImport}
-      />
+      <CategoryEditor categoriesController={categoriesController} />
       <RuleList rulesController={rulesController} />
     </section>
   );

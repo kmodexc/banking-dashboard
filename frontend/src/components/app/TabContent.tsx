@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
 import type { OidcClient } from '../../auth';
 import type { BudgetPlan } from '../../data/budgets';
-import type { CategoryEntry, UserCategoryState } from '../../data/categories';
 import type { AccountProps } from '../account/types';
 import { Categories } from '../categories/Categories';
+import type { CategoriesController } from '../categories/categoryTypes';
 import type { RulesController } from '../rules/ruleTypes';
 import type { AuthSnapshot, CategoryRule, ClassificationRule, Transaction } from '../../types';
 import { Account } from '../account/Account';
@@ -43,12 +43,7 @@ interface UnknownView {
 }
 
 interface CategoriesView {
-  entries: CategoryEntry[];
-  state: UserCategoryState;
-  onAdd: (name: string) => void;
-  onRename: (entry: CategoryEntry, name: string) => void;
-  onDelete: (entry: CategoryEntry) => void;
-  onImport: (next: UserCategoryState) => void;
+  categoriesController: CategoriesController;
   rulesController: RulesController;
 }
 
@@ -87,12 +82,7 @@ export function TabContent({
     case 'categories':
       return (
         <Categories
-          entries={categories.entries}
-          state={categories.state}
-          onAdd={categories.onAdd}
-          onRename={categories.onRename}
-          onDelete={categories.onDelete}
-          onImport={categories.onImport}
+          categoriesController={categories.categoriesController}
           rulesController={categories.rulesController}
         />
       );

@@ -3,26 +3,17 @@ import {
   parseImportedCategoryState,
   serializeUserCategoryState,
   type CategoryEntry,
-  type UserCategoryState,
 } from '../../data/categories';
 import { CategoryActions } from './CategoryActions';
 import { CategoryList } from './CategoryList';
+import type { CategoriesController } from './categoryTypes';
 
 export function CategoryEditor({
-  entries,
-  state,
-  onAdd,
-  onRename,
-  onDelete,
-  onImport,
+  categoriesController,
 }: {
-  entries: CategoryEntry[];
-  state: UserCategoryState;
-  onAdd: (name: string) => void;
-  onRename: (entry: CategoryEntry, name: string) => void;
-  onDelete: (entry: CategoryEntry) => void;
-  onImport: (next: UserCategoryState) => void;
+  categoriesController: CategoriesController;
 }): ReactElement {
+  const { entries, state, actions } = categoriesController;
   const fileInput = useRef<HTMLInputElement>(null);
   const [newName, setNewName] = useState('');
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -48,7 +39,7 @@ export function CategoryEditor({
       setMessage('The category file is invalid.');
       return;
     }
-    onImport(imported);
+    actions.importCategories(imported);
     setMessage('Categories imported.');
   }
 
@@ -64,7 +55,7 @@ export function CategoryEditor({
       setMessage('That category already exists.');
       return;
     }
-    onAdd(normalized);
+    actions.addCategory(normalized);
     setNewName('');
     setMessage('Category added.');
   }
@@ -85,12 +76,12 @@ export function CategoryEditor({
       setMessage('That category already exists.');
       return;
     }
-    onRename(entry, name);
+    actions.renameCategory(entry, name);
     setMessage('Category renamed.');
   }
 
   function deleteCategory(entry: CategoryEntry): void {
-    onDelete(entry);
+    actions.deleteCategory(entry);
     setMessage('Category deleted for this user.');
   }
 
